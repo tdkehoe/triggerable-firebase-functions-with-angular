@@ -79,20 +79,7 @@ export const environment = {
 
 Check that your browser is still showing the demo app.
 
-`Add Firebase SDK` also tells you to do several other things:
 
-```
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-```
-
-We'll use AngularFire instead of these items. Click `Continue to console`.
 
 ## Initialize Firestore
 Open the official documentation for (Get started: write, test, and deploy your first functions)[https://firebase.google.com/docs/functions/get-started].
