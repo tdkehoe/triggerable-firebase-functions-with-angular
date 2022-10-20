@@ -169,12 +169,19 @@ Initiate the emulators:
 
 ```bash
 firebase init emulators
+```
+
+Select `Functions Emulator` and `Firestore Emulator`. Accept the default ports.
+
+Run:
+
+```bash
 npm run build
 ```
 
 The latter command might ask you to update Java on your computer. 
 
-In `src/environments.ts` add a property:
+In `src/environments.ts` add a property `useEmulators`:
 
 ```ts
 export const environment = {
@@ -251,21 +258,23 @@ Here we hit a stumbling block. The official AngularFire documentation shows how 
 
 The problem is that you can't mix AngularFire 6 and 7. I use AngularFire 7 for Firestore and Auth. This means that I can't use callable functions with Firestore or Auth. The workaround is to trigger background functions instead of calling functions directly. We'll get to triggered background functions later. First this tutorial will teach callable functions, which you can't really use in a real Angular app now. I believe that we're very close to using AngularFire 7 with callable apps and only a few lines of code will need to change so let's learn to use callable functions with Angular 6.
 
+Import the emulator module as two lines and then make two providers lines for the emulators. These won't work because they're AngularFire 6.
+
+Import the Angular `FormsModule`.
+
 ```ts
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+
 import { AppComponent } from './app.component';
+import { initializeApp,provideFirebaseApp } from '@angular/fire/app';
 import { environment } from '../environments/environment';
+import { provideFirestore,getFirestore } from '@angular/fire/firestore';
 
-// AngularFire 7 -- comment out these line, we won't be using AngularFire 7
-// import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
-// import { provideFirestore, getFirestore } from '@angular/fire/firestore';
-// import { provideFunctions, getFunctions, connectFunctionsEmulator } from '@angular/fire/functions';
+import { USE_EMULATOR as USE_FIRESTORE_EMULATOR } from '@angular/fire/compat/functions';
+import { USE_EMULATOR as USE_FUNCTIONS_EMULATOR } from '@angular/fire/compat/functions';
 
-// AngularFire 6
-import { AngularFireModule } from '@angular/fire/compat';
-import { AngularFireFunctionsModule } from '@angular/fire/compat/functions';
-import { USE_EMULATOR as USE_EMULATOR_FUNCTIONS } from '@angular/fire/compat/functions'; // comment out to run in the cloud
+import { FormsModule } from '@angular/forms';
 
 @NgModule({
   declarations: [
@@ -273,39 +282,33 @@ import { USE_EMULATOR as USE_EMULATOR_FUNCTIONS } from '@angular/fire/compat/fun
   ],
   imports: [
     BrowserModule,
-
-    // AngularFire 7 -- comment out these line, we won't be using AngularFire 7
-    // provideFirebaseApp(() => initializeApp(environment.firebase)),
-    // provideFirestore(() => getFirestore()),
-    // provideFunctions(() => getFunctions()),
-
-    // AngularFire 6
-    AngularFireModule.initializeApp(environment.firebase),
-    AngularFireFunctionsModule
+    FormsModule,
+    provideFirebaseApp(() => initializeApp(environment.firebase)),
+    provideFirestore(() => getFirestore())
   ],
   providers: [
-        { provide: USE_EMULATOR_FUNCTIONS, useValue: environment.useEmulators ? ['localhost', 5001] : undefined }
+    { provide: USE_FIRESTORE_EMULATOR, useValue: environment.useEmulators ? ['localhost', 8080] : undefined },
+    { provide: USE_FUNCTIONS_EMULATOR, useValue: environment.useEmulators ? ['localhost', 5001] : undefined }
   ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
 ```
 
-You can comment out the Angular 7 lines now. 
-
 ## Make the HTML view
 
 Open `app.component.html`. Replace the placeholder view with:
 
 ```html
-<div>
-    <button mat-raised-button color="basic" (click)='callMe()'>Call me!</button>
-</div>
+<form (ngSubmit)="triggerMe()">
+    <input type="text" [(ngModel)]="message" name="message" placeholder="Message" required>
+    <button type="submit" value="Submit">Submit</button>
+</form>
 
-{{ data$ | async }}
+{{ data$ }}
 ```
 
-We made a button that calls a handler function in theb controller. There's also a line to display data returned from the callable function.
+We made a form to send a message to be stored in Firestore. There's also a line to display data returned from the callable function.
 
 ## Make the component controller
 
@@ -314,94 +317,58 @@ In `app.component.ts`
 ```ts
 import { Component } from '@angular/core';
 
-// AngularFire 7
-// import { getApp } from '@angular/fire/app';
-// import { provideFunctions, getFunctions, connectFunctionsEmulator, httpsCallable } from '@angular/fire/functions';
-// import { Firestore, doc, getDoc, getDocs, collection, updateDoc } from '@angular/fire/firestore';
-
-// AngularFire 6
-import { AngularFireFunctions } from '@angular/fire/compat/functions';
+import { Firestore, doc, getDoc, collection, addDoc } from '@angular/fire/firestore';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
+  styleUrls: ['./app.component.css']
 })
 export class AppComponent {
   data$: any;
+  docSnap: any;
+  message: string | null = null;
 
-  constructor(private functions: AngularFireFunctions) {
-    const callable = this.functions.httpsCallable('executeOnPageLoad');
-    this.data$ = callable({ name: 'Charles Babbage' });
+  constructor(public firestore: Firestore) { }
+
+  async triggerMe() {
+    console.log("Writing to Firestore: " + this.message);
+    try {
+      // write to Firestore
+      const docRef = await addDoc(collection(this.firestore, 'Triggers'), {
+        trigger: this.message,
+      });
+      console.log("Document written with ID: ", docRef.id);
+      this.message = null; // clear form fields
+      // read from Firestore
+      this.docSnap = await getDoc(doc(this.firestore, 'Triggers', docRef.id));
+      this.data$ = this.docSnap.data().trigger;
+    } catch (error) {
+      console.error(error);
+    }
   }
-
-  callMe() {
-    console.log("Calling...");
-    const callable = this.functions.httpsCallable('callMe');
-    this.data$ = callable({ name: 'Ada Lovelace' });
-  };
 }
 ```
 
-Again, comment out the Angular 7 imports for now.
-
-In `AppComponent` we make a single variable `data$: any`. This will handle the data returned from the callable functions and display it in the view.
-
-In the `constructor` we make a local variable `functions` to alias `AngularFireFunctions`. This is AngularFire 6. `AngularFireFunctions` isn't on AngularFire 7. As soon as `AngularFireFunctions` (or an equivelant property) is available on AngularFire 7 we should be able to use AngularFire 7.
-
-We have two lines of code that call a cloud function to execute on page load. These use the property `httpsCallable`. This take one parameter, the name of your cloud function.
-
-To execute the callable function we use `this.data$` to handle the returned data and then call the function. Calling the function has a required parameter, which is an object holding the data you want to send to the cloud function.
-
-Lastly, the component controller has a handler function for the button in the view. This executes similar code.
+The handler function writes the message to Firestore and then reads it back.
 
 ## Write your Firebase Cloud Functions
 
 Open `functions/src/index.ts` or `functions/index.js`. Import two Firebase modules, initialize your app, and then write your callable functions.
 
 ```ts
-// The Cloud Functions for Firebase SDK to create Cloud Functions and set up triggers.
 const functions = require('firebase-functions');
-
-// The Firebase Admin SDK to access Firestore.
 const admin = require('firebase-admin');
 admin.initializeApp();
 
-// executes on page load
-exports.executeOnPageLoad = functions.https.onCall((data, context) => {
-    console.log("The page is loaded!")
-    console.log(data);
-    console.log(data.name);
-    // console.log(context);
-    return 22
-});
-
-// executes on user input
-exports.callMe = functions.https.onCall((data, context) => {
-    console.log("Thanks for calling!")
-    console.log(data);
-    console.log(data.name);
-    // console.log(context);
-    return 57
+exports.triggerMe = functions.firestore.document('Triggers/{docId}').onWrite((data, context) => {
+    console.log("Trigger warning!")
+    console.log(data.message);
+    return 30
 });
 ```
 
-The function `executeOnPageLoad` executes when `ng serve` starts or restarts.
-
-The functions `callMe` executes when you click the button in the view.
-
-Each function is in the form 
-
-```js
-`functions.https.onCall((data, context) => {
-
-});
-```
-
-`https.onCall` means that this functions can be called directly from Angular. `data` is the data sent from Angular. `context` is metadata about the function's execution. We won't be using this.
-
-Each function sends a message to the console, then sends the data from Angular to the console. We've commented out displaying the `context` metadata in the console. This metadata goes on for pages and makes the logs hard to read. 
-
-Finally, each callable function returns something. 
+The function writes the message to Firestore.
 
 ## Run emulator
 
