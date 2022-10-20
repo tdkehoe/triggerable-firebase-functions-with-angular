@@ -464,17 +464,23 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 admin.initializeApp();
 
-exports.triggerMe = functions.firestore.document('Triggers/{docId}').onWrite((change, context) => {
-    console.log("Trigger warning!")
-    const document = change.after.exists ? change.after.data() : null;
-    console.log(document.trigger);
-    return 0
+exports.uppercaseMe = functions.firestore.document('Triggers/{docId}').onCreate((snap, context) => {
+    var original = snap.data().message;
+    functions.logger.log('Uppercasing', context.params.docId, original);
+    var uppercase = original.toUpperCase();
+    return snap.ref.set({ uppercase }, { merge: true });
 });
 ```
 
-The function logs the message you wrote to Firestore.
+This Cloud Function has four lines.
 
-All functions must return something so this functions returns `0`. The return data doesn't go to the Angular component. Typically 
+The first line stores the message written to Firestore in a local variable `original`.
+
+The second line is the same as `console.log`.
+
+The third line converts the original message to UPPERCASE.
+
+The last line returns something. All Cloud Functions must return something. This line uses `snap.ref` as the Firestore address of the document. It uses `set` with the `merge` parameter to add a field to an existing document. The new field is named `uppercase`. 
 
 ## Run emulator
 
@@ -522,7 +528,7 @@ Open a browser tab to http://127.0.0.1:4000/functions. You should see your messa
 Deploy your Cloud Function to Firebase:
 
 ```bash
- firebase deploy --only functions
+firebase deploy --only functions:uppercaseMe
  ```
  
  You may need to upgrade your project to the `Blaze` (paid) plan. Cloud Functions aren't free.
@@ -535,13 +541,4 @@ Deploy your Cloud Function to Firebase:
  
 Check the logs in your Firebase Console to see if your functions run.
 
-
-
-
-
-
- 
-
-
-
-
+I find it takes five to ten minutes for a Cloud Function to deploy, then I test the Cloud Function, then I wait for the logs. Sometimes there's a lag time between deploying a Cloud Function and the new code running, i.e., the results I get back in the logs sometimes show the previous version of the code I deployed. It's best to wait a minute after deploying a function finishes and testing the function. This ten-minute wait is why the emulators should be used for development.
