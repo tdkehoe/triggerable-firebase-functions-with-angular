@@ -84,8 +84,6 @@ Run `firebase login` to log in via the browser and authenticate the firebase too
 firebase login
 ```
 
-
-
 ## Initialize Firestore
 Initialize the Firestore database:
 
@@ -123,10 +121,9 @@ If you chose TypeScript, don't use ESLint. This will cancel deployment because o
 
 Install the dependencies.
 
-You should now have a subdirectory `functions`.
+You should now have a subdirectory `functions`. This subdirectory has its own `package.json` and `tsconfig.json`.
 
-
-open `functions/package.json` and change:
+Open `functions/package.json` and change:
 
 ```js
 "main": "lib/index.js",
@@ -138,7 +135,27 @@ to
 "main": "src/index.ts",
 ```
 
-If you chose JavaScript skip this step.
+In `tsconfig.json` add the properties `moduleResolution` and `noImplicitAny`:
+
+```js
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "Node",
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "outDir": "lib",
+    "sourceMap": true,
+    "strict": true,
+    "noImplicitAny": false,
+    "target": "es2017"
+  },
+  "compileOnSave": true,
+  "include": [
+    "src"
+  ]
+}
+```
 
 ## Initialize emulator
 
