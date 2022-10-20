@@ -61,50 +61,21 @@ UPDATE src/environments/environment.prod.ts (391 bytes)
 If you look in `app.module.ts` you'll see some new imported modules. In `environment.ts` you'll see your new Firebase credentials.
 
 ## Create Firestore database
-Open your Firebase console and look for your project. If it wasn't made for you then make a new project with a Firestore database.
+Open your Firebase console and open your project. Click on `Cloud Firestore`, `Create database`, and `Start in test mode`.
 
-Open the Firestore [Get started](https://firebase.google.com/docs/firestore/quickstart) section.
-
-In your [Firebase Console](https://console.firebase.google.com), under `Get started by adding Firebase to your app` select the web app `</>` icon. Register your app. You won't need `Firebase Hosting`, we'll just run the app locally.
-
-Under `Add Firebase SDK` select `Use npm`.
-
-If you're using an existing Firestore database go to the settings gear in the Firebase console.
-
-Open `src/environments.ts`. You should see the credentials match the credentials in your Firebase console. If not, copy and paste the credenbtials from your Firebase console to `environments.ts`.
-
-```ts
-export const environment = {
-  production: false,
-  firebaseConfig: {
-    apiKey: '<your-key>',
-    authDomain: '<your-project-authdomain>',
-    projectId: '<your-project-id>',
-    storageBucket: '<your-storage-bucket>',
-    messagingSenderId: '<your-messaging-sender-id>',
-    appId: '<your-app-id>',
-    measurementId: '<your-measurement-id>'
-  }
-};
-```
-
-Check that your browser is still showing the demo app.
-
-
-
-## Initialize Firestore
+## Install Firebase
 Open the official documentation for (Get started: write, test, and deploy your first functions)[https://firebase.google.com/docs/functions/get-started].
 
-Stay in the project directory and install `firebase-tools`:
+Install `firebase-tools` globally:
 
 ```bash
 npm install -g firebase-tools
 ```
 
-Install `firebase-functions` and `firebase-admin`.
+Install `firebase-admin` locally in your project directory.
 
 ```bash
-npm install firebase-functions@latest firebase-admin@latest --save
+npm install firebase-admin@latest
 ```
 
 Run `firebase login` to log in via the browser and authenticate the firebase tool:
@@ -113,39 +84,49 @@ Run `firebase login` to log in via the browser and authenticate the firebase too
 firebase login
 ```
 
+
+
+## Initialize Firestore
 Initialize the Firestore database:
 
 ```bash
 firebase init firestore
 ```
 
-If you get a warning
+Accept the default settings.
+
+You may need to add your project:
 
 ```bash
-Error: It looks like you haven't used Cloud Firestore in this project before.
+firebase use --add triggerable-cloud-functions
 ```
 
-then go to your Firebase console and click on `Firestore Database`. Open a new database.
+## Install and initialize Functions
 
-## Initialize Functions
-
-Then initialize Firebase Cloud Functions:
+Install `firebase-functions` locally in your project directory.
 
 ```bash
-firebase init functions
+npm install firebase-functions@latest
 ```
 
-Choose `Initialize`, not `Overwrite`. It will then ask you to name your functions. Just call it `functions`.
+Initialize functions:
 
-It will ask you to choose between `JavaScript` and `TypeScript`.
+```bash
+firebase init firestore
+```
 
-It will then ask if you want to use ESLint. I choose `no` because your functions won't deploy if ESLint finds anything to complain about, and ESLint can find a lot of unimportant things to complain about. I use Visual Studio Code to find my coding errors.
+You'll be asked to select `JavaScript` or `TypeScript`. The TypeScript transpiler throws endless errors when I try to deploy cloud functions. I'll tell you how to fix some of these errors but you can avoid headaches by selecting JavaScript.
 
-Then it asks if you want to install npm dependencies. Say `yes`.
+### TypeScript
 
-### Fix `package.json`
+If you chose TypeScript, don't use ESLint. This will cancel deployment because of endless style issues. I use Visual Studio Code to catch syntax errors.
 
-If you chose TypeScript, open `functions/package.json` and change:
+Install the dependencies.
+
+You should now have a subdirectory `functions`.
+
+
+open `functions/package.json` and change:
 
 ```js
 "main": "lib/index.js",
