@@ -36,16 +36,18 @@ Your browser should open to `localhost:4200`. You should see the Angular default
 
 ## Install AngularFire and Firebase
 
-Open another tab in your terminal and install AngularFire and Firebase from `npm`.
+Open another tab in your terminal, check that you're in `TriggerableFunctionsTutorial`, and install AngularFire and Firebase from `npm`.
 
 ```bash
 npm install firebase
 ng add @angular/fire
 ```
 
-Deselect `ng deploy -- hosting` and select `Firestore`. 
+Deselect `ng deploy -- hosting` and select `Firestore`. (We won't use `Cloud Functions - callable` in this tutorial.)
 
-It will ask you for your email address associated with your Firebase account. Then it will ask you to associate a Firebase project. Select `[CREATE NEW PROJECT]`. Call it `triggerable-cloud-functions`. (Must be 6-30 characters, no spaces, all lower case. These naming requirements aren't the same as when you create a new project in the Firebase Console.)
+It will ask you for your email address associated with your Firebase account. Then it will ask you to associate a Firebase project. Select `[CREATE NEW PROJECT]`. It will then ask for a unique project ID. This must be 6-30 characters, no spaces, all lower case. Call it `triggerable-functions-project`. 
+
+Then you'll be asked for project name. This can have spaces and upper case. Call it `Triggerable Functions Project`.
 
 You'll also be asked to create a new app. Call it `triggerable-functions-app`.
 
@@ -96,7 +98,7 @@ Accept the default settings.
 You may need to add your project:
 
 ```bash
-firebase use --add triggerable-cloud-functions
+firebase use --add triggerable-functions-project
 ```
 
 ## Install and initialize Functions
@@ -110,24 +112,61 @@ npm install firebase-functions@latest
 Initialize functions:
 
 ```bash
-firebase init firestore
+firebase init functions
 ```
 
 You'll be asked to select `JavaScript` or `TypeScript`. The TypeScript transpiler throws endless errors when I try to deploy cloud functions. I'll tell you how to fix some of these errors but you can avoid headaches by selecting JavaScript.
 
-### TypeScript
-
-If you chose TypeScript, don't use ESLint. This will cancel deployment because of endless style issues. I use Visual Studio Code to catch syntax errors.
+Don't use ESLint. This will cancel deployment because of endless style issues. I use Visual Studio Code to catch syntax errors.
 
 Install the dependencies.
 
-You should now have a subdirectory `functions`. This subdirectory has its own `package.json` and `tsconfig.json`.
+You should now have a subdirectory `functions`. This subdirectory has its own `package.json`. 
+
+## Update dependencies
+
+In `functions/package.json` 
+
+```bash
+cd functions
+```
+
+update the dependencies.
+
+```bash
+npm install --save firebase-admin@latest
+npm install --save firebase-functions@latest
+```
+
+If you chose TypeScript:
+
+```bash
+npm install --save typescript@latest
+```
+
+Regularly run these commands in your `functions` directory to keep the npm modules up to date:
+
+```bash
+npm outdated
+npm update
+```
+
+Look up the lastest versions:
+[Firebase Admin](https://www.npmjs.com/package/firebase-admin)
+[Firebase Functions](https://www.npmjs.com/package/firebase-functions)
+[TypeScript](https://www.npmjs.com/package/typescript)
+
+### TypeScript
+
+Your `functions` subdirectory should also have its own `tsconfig.json`.
 
 Open `functions/package.json` and add:
 
 ```js
 "type": "module",
 ```
+
+Try removing this if you have get errors on deployment.
 
 Change:
 
@@ -139,14 +178,6 @@ to
 
 ```js
 "main": "src/index.ts",
-```
-
-Update to the latest dependencies. In your `functions` directory:
-
-```bash
-npm install --save firebase-admin@latest
-npm install --save firebase-functions@latest
-npm install --save typescript@latest
 ```
 
 Your `package.json` should now look like:
@@ -178,18 +209,6 @@ Your `package.json` should now look like:
     "private": true
 }
 ```
-
-Regularly run these commands in your `functions` directory to keep the npm modules up to date:
-
-```bash
-npm outdated
-npm update
-```
-
-Look up the lastest versions:
-[Firebase Admin](https://www.npmjs.com/package/firebase-admin)
-[Firebase Functions](https://www.npmjs.com/package/firebase-functions)
-[TypeScript](https://www.npmjs.com/package/typescript)
 
 In `tsconfig.json` add the properties `moduleResolution` and `noImplicitAny`:
 
@@ -233,13 +252,19 @@ Functions are different. Without the emulator developing code can be painfully s
 
 Another advantage of the emulator is that you screw up your code, such as writing an infinite loop, without affecting your Google Cloud Services bill. In other words, test your functions in the emulator before deploying them to the cloud.
 
+Return to your project directory
+
+```bash
+cd ..
+```
+
 Initiate the emulators:
 
 ```bash
 firebase init emulators
 ```
 
-Select `Functions Emulator` and `Firestore Emulator`. Accept the default ports.
+Select `Functions Emulator` and `Firestore Emulator`. Accept the default ports, but download the emulators.
 
 Run:
 
@@ -373,10 +398,11 @@ Open `app.component.html`. Replace the placeholder view with:
     <button type="submit" value="Submit">Submit</button>
 </form>
 
-{{ data$ }}
+<div>{{ data$ }}</div>
+<div>{{ upperca$e }}</div>
 ```
 
-We made a form to send a message to be stored in Firestore. There's also a line to display data returned from the callable function.
+We made a form to send a message to be stored in Firestore. `data$` displays what we read from Firestore after the write. `upperca$e` displays what we read from Firestore after the Cloud Function run. (`$` at the end of a variable flags that it's an Observable.)
 
 ## Make the component controller
 
@@ -384,8 +410,7 @@ In `app.component.ts`
 
 ```ts
 import { Component } from '@angular/core';
-
-import { Firestore, doc, getDoc, collection, addDoc } from '@angular/fire/firestore';
+import { Firestore, doc, getDoc, collection, addDoc, onSnapshot } from '@angular/fire/firestore';
 
 @Component({
   selector: 'app-root',
@@ -396,21 +421,25 @@ export class AppComponent {
   data$: any;
   docSnap: any;
   message: string | null = null;
+  upperca$e: string | null = null;
+  unsubMessage$: any;
 
-  constructor(public firestore: Firestore) { }
+  constructor(public firestore: Firestore) {}
 
   async triggerMe() {
-    console.log("Writing to Firestore: " + this.message);
     try {
       // write to Firestore
       const docRef = await addDoc(collection(this.firestore, 'Triggers'), {
-        trigger: this.message,
+        message: this.message,
       });
-      console.log("Document written with ID: ", docRef.id);
       this.message = null; // clear form fields
       // read from Firestore
       this.docSnap = await getDoc(doc(this.firestore, 'Triggers', docRef.id));
-      this.data$ = this.docSnap.data().trigger;
+      this.data$ = this.docSnap.data().message;
+      // document listener
+      this.unsubMessage$ = onSnapshot(doc(this.firestore, 'Triggers', docRef.id), (snapshot: any) => {
+        this.upperca$e = snapshot.data().uppercase;
+      });
     } catch (error) {
       console.error(error);
     }
@@ -418,7 +447,13 @@ export class AppComponent {
 }
 ```
 
-The handler function writes the message to Firestore and then reads it back.
+The handler function writes a message to Firestore, reads back what Firestore stored, then listens for changes in the document.
+
+We could unsubscribe the listener with
+
+```ts
+this.unsubMessage$();
+```
 
 ## Write your Firebase Cloud Functions
 
@@ -429,14 +464,17 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 admin.initializeApp();
 
-exports.triggerMe = functions.firestore.document('Triggers/{docId}').onWrite((data, context) => {
+exports.triggerMe = functions.firestore.document('Triggers/{docId}').onWrite((change, context) => {
     console.log("Trigger warning!")
-    console.log(data.message);
-    return 30
+    const document = change.after.exists ? change.after.data() : null;
+    console.log(document.trigger);
+    return 0
 });
 ```
 
-The function writes the message to Firestore.
+The function logs the message you wrote to Firestore.
+
+All functions must return something so this functions returns `0`. The return data doesn't go to the Angular component. Typically 
 
 ## Run emulator
 
