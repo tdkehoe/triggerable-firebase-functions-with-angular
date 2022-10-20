@@ -12,9 +12,9 @@ Firebase Cloud Functions can be executed in three ways:
 
 * Call functions from your app, e.g., Angular or React
 * Call functions via HTTP request, which is good for Express apps
-* Trigger from a write to Firestore (other Firebase products such as Storage will be able to trigger cloud functions soon)
+* Trigger from a write to Firestore (other Firebase products such as Storage are in beta)
 
-I wrote a tutorial for [calling cloud functions from an Angular App](https://github.com/tdkehoe/Firebase-Cloud-Functions-with-Angular). Calling functions via HTTP requests is for Express apps, not Angular apps. This tutorial is about triggering cloud functions from Firestore. This tutorial is seperate from the callable functions tutorial because the latter uses AngularFire 6 when this tutorial uses AngularFire 7.
+I wrote a tutorial for [calling Cloud Functions from an Angular App](https://github.com/tdkehoe/Firebase-Cloud-Functions-with-Angular). Calling functions via HTTP requests is for Express apps, not Angular apps. This tutorial is about triggering Cloud Functions from Firestore. This tutorial is seperate from the callable functions tutorial because the latter uses AngularFire 6 when this tutorial uses AngularFire 7.
 
 ## Create a new project
 
@@ -43,13 +43,24 @@ npm install firebase
 ng add @angular/fire
 ```
 
-Deselect `ng deploy -- hosting` and select `Firestore` and `Cloud Functions (callable)`.
+Deselect `ng deploy -- hosting` and select `Firestore`. 
 
-It will ask you for your email address associated with your Firebase account. Then it will ask you to associate a Firebase project. Select `[CREATE NEW PROJECT]`. Call it `Triggerable Functions Tutorial`.
+It will ask you for your email address associated with your Firebase account. Then it will ask you to associate a Firebase project. Select `[CREATE NEW PROJECT]`. Call it `triggerable-cloud-functions`. (Must be 6-30 characters, no spaces, all lower case. These naming requirements aren't the same as when you create a new project in the Firebase Console.)
 
-LOST EVERYTHING AFTER THIS
+You'll also be asked to create a new app. Call it `triggerable-functions-app`.
 
-## Create Firestore database and check Firebase credentials in `environments.ts`
+You should see:
+
+```bash
+UPDATE .gitignore (602 bytes)
+UPDATE src/app/app.module.ts (627 bytes)
+UPDATE src/environments/environment.ts (998 bytes)
+UPDATE src/environments/environment.prod.ts (391 bytes)
+```
+
+If you look in `app.module.ts` you'll see some new imported modules. In `environment.ts` you'll see your new Firebase credentials.
+
+## Create Firestore database
 Open your Firebase console and look for your project. If it wasn't made for you then make a new project with a Firestore database.
 
 Open the Firestore [Get started](https://firebase.google.com/docs/firestore/quickstart) section.
