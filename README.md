@@ -123,7 +123,13 @@ Install the dependencies.
 
 You should now have a subdirectory `functions`. This subdirectory has its own `package.json` and `tsconfig.json`.
 
-Open `functions/package.json` and change:
+Open `functions/package.json` and add:
+
+```js
+"type": "module",
+```
+
+Change:
 
 ```js
 "main": "lib/index.js",
@@ -134,6 +140,56 @@ to
 ```js
 "main": "src/index.ts",
 ```
+
+Update to the latest dependencies. In your `functions` directory:
+
+```bash
+npm install --save firebase-admin@latest
+npm install --save firebase-functions@latest
+npm install --save typescript@latest
+```
+
+Your `package.json` should now look like:
+
+```js
+{
+    "name": "functions",
+    "type": "module",
+    "scripts": {
+        "build": "tsc",
+        "build:watch": "tsc --watch",
+        "serve": "npm run build && firebase emulators:start --only functions",
+        "shell": "npm run build && firebase functions:shell",
+        "start": "npm run shell",
+        "deploy": "firebase deploy --only functions",
+        "logs": "firebase functions:log"
+    },
+    "engines": {
+        "node": "16"
+    },
+    "main": "src/index.ts",
+    "dependencies": {
+        "firebase-admin": "^11.2.0",
+        "firebase-functions": "^4.0.1"
+    },
+    "devDependencies": {
+        "typescript": "^4.8.4"
+    },
+    "private": true
+}
+```
+
+Regularly run these commands in your `functions` directory to keep the npm modules up to date:
+
+```bash
+npm outdated
+npm update
+```
+
+Look up the lastest versions:
+[Firebase Admin](https://www.npmjs.com/package/firebase-admin)
+[Firebase Functions](https://www.npmjs.com/package/firebase-functions)
+[TypeScript](https://www.npmjs.com/package/typescript)
 
 In `tsconfig.json` add the properties `moduleResolution` and `noImplicitAny`:
 
@@ -155,6 +211,18 @@ In `tsconfig.json` add the properties `moduleResolution` and `noImplicitAny`:
     "src"
   ]
 }
+```
+
+Even with all this reconfiguration when I deploy TypeScript cloud functions I get a pair of errors. If I set types, e.g., `data: any`, the transpiler throws this error:
+
+```bash
+SyntaxError: Unexpected token ':'
+```
+
+Leaving out the type, e.g., `data`, the transpiler throws this error:
+
+```bash
+Function failed on loading user code. This is likely due to a bug in the user code.
 ```
 
 ## Initialize emulator
@@ -375,61 +443,51 @@ The function writes the message to Firestore.
 Start the Firebase Emulator.
 
 ```bash
-firebase emulators:start --only functions
+firebase emulators:start
 ```
 
-Run the function `executeonPageLoad` by restarting `ng serve`. Run the function `callMe` by clicking the button in the view.
+You should see this with no error messages or warnings:
 
-You should see the results in several places. In the view, you should see `22` as the result from `executeonPageLoad`. When you click the button this result changes to `57`. This is an observable so if the data changes in the cloud function it'll change in the view.
+```bash
+┌─────────────────────────────────────────────────────────────┐
+│ ✔  All emulators ready! It is now safe to connect your app. │
+│ i  View Emulator UI at http://127.0.0.1:4000/               │
+└─────────────────────────────────────────────────────────────┘
 
-In the emulator logs, you should see the logs:
+┌───────────┬────────────────┬─────────────────────────────────┐
+│ Emulator  │ Host:Port      │ View in Emulator UI             │
+├───────────┼────────────────┼─────────────────────────────────┤
+│ Functions │ 127.0.0.1:5001 │ http://127.0.0.1:4000/functions │
+├───────────┼────────────────┼─────────────────────────────────┤
+│ Firestore │ 127.0.0.1:8080 │ http://127.0.0.1:4000/firestore │
+└───────────┴────────────────┴─────────────────────────────────┘
+  Emulator Hub running at 127.0.0.1:4400
+  Other reserved ports: 4500, 9150
 
-```
-12:05:02  I function[us-central1-callMe]  Beginning execution of "callMe"
-12:05:02  I function[us-central1-callMe]  Thanks for calling!
-12:05:02  I function[us-central1-callMe]  { name: 'Ada Lovelace' }
-12:05:02  I function[us-central1-callMe]  Ada Lovelace
-12:05:02  I function[us-central1-callMe]  Finished "callMe" in 6.512202ms
-```
-
-You should see the same logs in the terminal emulator tab.
-
-## TypeScript errors
-
-If you chose to use TypeScript you may see some errors. The issue is the data type of the parameters in your functions:
-
-```ts
-exports.callMe = functions.https.onCall((data, context) => {}
+Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
 ```
 
-This will throw any error `Parameter 'data' implicitly has an 'any' type.` This is because TypeScript is running in `strict` mode by default.
+## Run your code
 
-```ts
-exports.callMe = functions.https.onCall((data: any, context: any) => {}
-```
+Open your browser to `http://localhost:4200/` and you should see a form. Enter a message and click the `Submit` button. You should see your message appear below the form.
 
-This will throw this error:
+In your Firestore database you should see your message.
 
-```
-SyntaxError: Unexpected token ':'
-```
+## Check the functions logs
 
-The latter appears to be an issue with the transpiler. The transpiler apparently failed to remove the types when it transpiled TypeScript into JavaScript.
+Did your Cloud Function run?
 
-Both errors can be ignored. You can get rid of the former error by opening `functions/tsconfig.json` and either change `strict` to `false` or to add this line:
-
-```js
-"noImplicitAny": false,
-```
-
-It doesn't seem to matter if you set this to `true` or `false`.
+Open a browser tab to http://127.0.0.1:4000/functions. You should see your message in the logs. If not, your Cloud Function didn't run in the emulator.
 
 ## Deploy to Firebase
 
+Deploy your Cloud Function to Firebase:
 
 ```bash
  firebase deploy --only functions
  ```
+ 
+ You may need to upgrade your project to the `Blaze` (paid) plan. Cloud Functions aren't free.
  
  In `src/environments.ts` change `useEmulators` to `false`:
  
@@ -438,79 +496,14 @@ It doesn't seem to matter if you set this to `true` or `false`.
  ```
  
 Check the logs in your Firebase Console to see if your functions run.
+
+
+
+
+
+
  
-## Calling functions via HTTP requests
 
-Firebase cloud functions can also be [called via HTTP requests](https://firebase.google.com/docs/functions/http-events?hl=en&authuser=0). This is useful for Express apps but not for Angular apps.
 
-## Triggering Firebase Cloud Functions from FireStore
 
-You can trigger a Firebase Cloud Function by writing data to Firestore. This doesn't use AngularFire for functions, i.e., only uses AngularFire for Firestore, so it doesn't matter whether you use AngularFire 6 or 7 for functions.
 
-Make a new cloud function:
-
-```ts
-exports.makeUppercase = functions.firestore.document('/triggers/upperCASE')
-.onCreate((snap, context) => {
-  const original = snap.data().original;
-  console.log('Uppercasing', context.params.documentId, original);
-  const uppercase = original.toUpperCase();
-  return snap.ref.set({uppercase}, {merge: true});
-});
-```
-
-This will trigger you write data to the document `upperCASE` in the collection `triggers`. The function receives a string and returns the string in UPPERCASE.
-
-Add a form field to the HTML view:
-
-```html
-<div>
-    <button mat-raised-button color="basic" (click)='callMe()'>Call me!</button>
-</div>
-
-{{ data$ | async }}
-
-<form (ngSubmit)="upperCaseMe()">
-    <input type="text" [(ngModel)]="message" name="message" placeholder="Message" required>
-    <button type="submit" value="Submit">Submit</button>
-</form>
-```
-
-In `app.module.ts` import Angular Forms:
-
-```js
-import { FormsModule } from '@angular/forms';
-...
-  imports: [
-    BrowserModule,
-    FormsModule,
-    ...
-    ]
-```
-
-Add the handler function to `app.component.ts`
-
-```ts
-  async upperCaseMe() {
-    console.log(this.message);
-      try {
-        const docRef = await addDoc(collection(this.firestore, 'triggers'), {
-          message: this.message,
-        });
-        console.log(docRef);
-        this.message = null;
-      } catch (error) {
-        console.error(error);
-      }
-  }
-```
-
-Deploy to Firebase:
-
-```bash
-firebase deploy --only functions
-```
-
-### Switch from AngularFire 6 to 7
-
-Functions and the emulator run in AngularFire 6. Firestore runs in AngularFire 7. You can't mix AngularFire 6 and 7. Comment out the AngularFire 6 code and comment in the AngularFire 7 code. You don't AngularFire Functions to trigger cloud functions (only for callable functions). 
