@@ -16,23 +16,7 @@ Firebase Cloud Functions can be executed in three ways:
 
 I wrote a tutorial for [calling Cloud Functions from an Angular App](https://github.com/tdkehoe/Firebase-Cloud-Functions-with-Angular). Calling functions via HTTP requests is for Express apps, not Angular apps. This tutorial is about triggering Cloud Functions from Firestore. This tutorial is seperate from the callable functions tutorial because the latter uses AngularFire 6 when this tutorial uses AngularFire 7.
 
-## Install Angular
 
-In your terminal:
-
-```bash
-npm install -g @angular/cli
-ng new TriggerableFunctionsTutorial
-```
-
-The Angular CLI's `new` command will set up the latest Angular build in a new project structure. Accept the defaults (no routing, CSS). Start the server:
-
-```bash
-cd TriggerableFunctionsTutorial
-ng serve -o
-```
-
-Your browser should open to `localhost:4200`. You should see the Angular default homepage.
 
 ## Install Firebase
 Open the official documentation for (Get started: write, test, and deploy your first functions)[https://firebase.google.com/docs/functions/get-started].
@@ -99,7 +83,7 @@ Initialize functions:
 firebase init functions
 ```
 
-You'll be asked to select `JavaScript` or `TypeScript`. The TypeScript transpiler throws endless errors when I try to deploy cloud functions. I'll tell you how to fix some of these errors but you can avoid headaches by selecting JavaScript.
+You'll be asked to select `JavaScript` or `TypeScript`.
 
 Don't use ESLint. This will cancel deployment because of endless style issues. I use Visual Studio Code to catch syntax errors.
 
@@ -107,8 +91,7 @@ Install the dependencies.
 
 You should now have a subdirectory `functions`. This subdirectory has its own `package.json`. 
 
-
-## Directory structure
+### Directory structure
 Look at your directory and you should see, if you chose TypeScript:
 
 ```bash
@@ -152,8 +135,6 @@ myproject
       |
       +- package.json  # npm package file describing your Cloud Functions code
 ```
-
-
 
 ## Initialize emulator
 
@@ -205,9 +186,6 @@ export const environment = {
 
 Change `useEmulators` to `false` when you deploy to the cloud.
 
-
-
-
 ## Run emulator
 
 Start the Firebase Emulator.
@@ -237,7 +215,32 @@ You should see this with no error messages or warnings:
 Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
 ```
 
+## And here we throw an error
 
+
+
+
+
+
+
+
+## Install Angular
+
+In your terminal:
+
+```bash
+npm install -g @angular/cli
+ng new TriggerableFunctionsTutorial
+```
+
+The Angular CLI's `new` command will set up the latest Angular build in a new project structure. Accept the defaults (no routing, CSS). Start the server:
+
+```bash
+cd TriggerableFunctionsTutorial
+ng serve -o
+```
+
+Your browser should open to `localhost:4200`. You should see the Angular default homepage.
 
 ## Install AngularFire
 
