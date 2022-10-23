@@ -34,13 +34,21 @@ ng serve -o
 
 Your browser should open to `localhost:4200`. You should see the Angular default homepage.
 
-## Install AngularFire and Firebase
+## Install Firebase
+Open the official documentation for (Get started: write, test, and deploy your first functions)[https://firebase.google.com/docs/functions/get-started].
 
 Open another tab in your terminal, check that you're in `TriggerableFunctionsTutorial`, and install AngularFire and Firebase from `npm`.
 
 ```bash
 npm install firebase
-ng add @angular/fire
+npm install -g firebase-tools
+npm install firebase-admin@latest
+
+
+Run `firebase login` to log in via the browser and authenticate the firebase tool:
+
+```
+firebase login
 ```
 
 Select `ng deploy -- hosting`, `Firestore`, and `Cloud Functions (callable)`. (We won't use Hosting or callable Cloud Functions in this tutorial.)
@@ -62,28 +70,7 @@ UPDATE src/environments/environment.prod.ts (391 bytes)
 
 If you look in `app.module.ts` you'll see some new imported modules. In `environment.ts` you'll see your new Firebase credentials.
 
-## Install Firebase
-Open the official documentation for (Get started: write, test, and deploy your first functions)[https://firebase.google.com/docs/functions/get-started].
-
-Install `firebase-tools` globally:
-
-```bash
-npm install -g firebase-tools
-```
-
-Install `firebase-admin` locally in your project directory.
-
-```bash
-npm install firebase-admin@latest
-```
-
-Run `firebase login` to log in via the browser and authenticate the firebase tool:
-
-```bash
-firebase login
-```
-
-## Initialize Firestore
+### Initialize Firestore
 Initialize the Firestore database:
 
 ```bash
@@ -98,7 +85,7 @@ You may need to add your project:
 firebase use --add triggerable-functions-project
 ```
 
-## Install and initialize Functions
+### Install and initialize Functions
 
 Install `firebase-functions` locally in your project directory.
 
@@ -119,6 +106,144 @@ Don't use ESLint. This will cancel deployment because of endless style issues. I
 Install the dependencies.
 
 You should now have a subdirectory `functions`. This subdirectory has its own `package.json`. 
+
+
+## Directory structure
+Look at your directory and you should see, if you chose TypeScript:
+
+```bash
+myproject
+ +- .firebaserc    # Hidden file that helps you quickly switch between
+ |                 # projects with `firebase use`
+ |
+ +- firebase.json  # Describes properties for your project
+ |
+ +- functions/     # Directory containing all your functions code
+      |
+      +- node_modules/ # directory where your dependencies (declared in # package.json) are installed
+      |
+      +- package-lock.json
+      |
+      +- src/
+          |
+           +- index.ts  # main source file for your Cloud Functions code
+      |
+      +- tsconfig.json  # if you chose TypeScript
+      |
+      +- package.json  # npm package file describing your Cloud Functions code
+```
+
+JavaScript will be simpler:
+
+```bash
+myproject
+ +- .firebaserc    # Hidden file that helps you quickly switch between
+ |                 # projects with `firebase use`
+ |
+ +- firebase.json  # Describes properties for your project
+ |
+ +- functions/     # Directory containing all your functions code
+      |
+      +- node_modules/ # directory where your dependencies (declared in # package.json) are installed
+      |
+      +- package-lock.json
+      |
+      +- index.js  # main source file for your Cloud Functions code
+      |
+      +- package.json  # npm package file describing your Cloud Functions code
+```
+
+
+
+## Initialize emulator
+
+Firebase comes with an emulator. The emulator will simulate many Firebase services, including Firestore, Auth, etc. I've never found a need for the emulator with Firestore and Auth as these execute quickly in the cloud. 
+
+Functions are different. Without the emulator developing code can be painfully slow. Deploying your code changes to the cloud takes about two minutes. Then I test my code changes and I have to wait for the console logs. This takes a few more minutes, with clicking various buttons in the console to get the logs to stream. I've seen a lag time between deploying functions to the cloud and the new version running so this can add a minute or two. All in all, waiting five minutes between writing new code and seeing the results feels painfully slow. With the emulator there's no waiting.
+
+Another advantage of the emulator is that you screw up your code, such as writing an infinite loop, without affecting your Google Cloud Services bill. In other words, test your functions in the emulator before deploying them to the cloud.
+
+Return to your project directory
+
+```bash
+cd ..
+```
+
+Initiate the emulators:
+
+```bash
+firebase init emulators
+```
+
+Select `Functions Emulator`, `Firestore Emulator`, and `Hosting Emulator`. (This tutorial won't use the Hosting Emulator.) Accept the default ports, but download the emulators.
+
+Run:
+
+```bash
+npm run build
+```
+
+The latter command might ask you to update Java on your computer. 
+
+In `src/environments.ts` add a property `useEmulators`:
+
+```ts
+export const environment = {
+  firebase: {
+    projectId: '...,
+    appId: '...,
+    storageBucket: '...',
+    locationId: 'us-central',
+    apiKey: '...',
+    authDomain: '...',
+    messagingSenderId: '...',
+  },
+  production: false,
+  useEmulators: true
+};
+```
+
+Change `useEmulators` to `false` when you deploy to the cloud.
+
+
+
+
+## Run emulator
+
+Start the Firebase Emulator.
+
+```bash
+firebase emulators:start
+```
+
+You should see this with no error messages or warnings:
+
+```bash
+┌─────────────────────────────────────────────────────────────┐
+│ ✔  All emulators ready! It is now safe to connect your app. │
+│ i  View Emulator UI at http://127.0.0.1:4000/               │
+└─────────────────────────────────────────────────────────────┘
+
+┌───────────┬────────────────┬─────────────────────────────────┐
+│ Emulator  │ Host:Port      │ View in Emulator UI             │
+├───────────┼────────────────┼─────────────────────────────────┤
+│ Functions │ 127.0.0.1:5001 │ http://127.0.0.1:4000/functions │
+├───────────┼────────────────┼─────────────────────────────────┤
+│ Firestore │ 127.0.0.1:8080 │ http://127.0.0.1:4000/firestore │
+└───────────┴────────────────┴─────────────────────────────────┘
+  Emulator Hub running at 127.0.0.1:4400
+  Other reserved ports: 4500, 9150
+
+Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
+```
+
+
+
+## Install AngularFire
+
+```
+ng add @angular/fire
+```
 
 ## Update dependencies
 
@@ -241,100 +366,7 @@ Leaving out the type, e.g., `data`, the transpiler throws this error:
 Function failed on loading user code. This is likely due to a bug in the user code.
 ```
 
-## Initialize emulator
 
-Firebase comes with an emulator. The emulator will simulate many Firebase services, including Firestore, Auth, etc. I've never found a need for the emulator with Firestore and Auth as these execute quickly in the cloud. 
-
-Functions are different. Without the emulator developing code can be painfully slow. Deploying your code changes to the cloud takes about two minutes. Then I test my code changes and I have to wait for the console logs. This takes a few more minutes, with clicking various buttons in the console to get the logs to stream. I've seen a lag time between deploying functions to the cloud and the new version running so this can add a minute or two. All in all, waiting five minutes between writing new code and seeing the results feels painfully slow. With the emulator there's no waiting.
-
-Another advantage of the emulator is that you screw up your code, such as writing an infinite loop, without affecting your Google Cloud Services bill. In other words, test your functions in the emulator before deploying them to the cloud.
-
-Return to your project directory
-
-```bash
-cd ..
-```
-
-Initiate the emulators:
-
-```bash
-firebase init emulators
-```
-
-Select `Functions Emulator`, `Firestore Emulator`, and `Hosting Emulator`. (This tutorial won't use the Hosting Emulator.) Accept the default ports, but download the emulators.
-
-Run:
-
-```bash
-npm run build
-```
-
-The latter command might ask you to update Java on your computer. 
-
-In `src/environments.ts` add a property `useEmulators`:
-
-```ts
-export const environment = {
-  firebase: {
-    projectId: '...,
-    appId: '...,
-    storageBucket: '...',
-    locationId: 'us-central',
-    apiKey: '...',
-    authDomain: '...',
-    messagingSenderId: '...',
-  },
-  production: false,
-  useEmulators: true
-};
-```
-
-Change `useEmulators` to `false` when you deploy to the cloud.
-
-## Directory structure
-Look at your directory and you should see, if you chose TypeScript:
-
-```bash
-myproject
- +- .firebaserc    # Hidden file that helps you quickly switch between
- |                 # projects with `firebase use`
- |
- +- firebase.json  # Describes properties for your project
- |
- +- functions/     # Directory containing all your functions code
-      |
-      +- node_modules/ # directory where your dependencies (declared in # package.json) are installed
-      |
-      +- package-lock.json
-      |
-      +- src/
-          |
-           +- index.ts  # main source file for your Cloud Functions code
-      |
-      +- tsconfig.json  # if you chose TypeScript
-      |
-      +- package.json  # npm package file describing your Cloud Functions code
-```
-
-JavaScript will be simpler:
-
-```bash
-myproject
- +- .firebaserc    # Hidden file that helps you quickly switch between
- |                 # projects with `firebase use`
- |
- +- firebase.json  # Describes properties for your project
- |
- +- functions/     # Directory containing all your functions code
-      |
-      +- node_modules/ # directory where your dependencies (declared in # package.json) are installed
-      |
-      +- package-lock.json
-      |
-      +- index.js  # main source file for your Cloud Functions code
-      |
-      +- package.json  # npm package file describing your Cloud Functions code
-```
 
 ## Setup `@NgModule` for the `AngularFireModule` and `AngularFireFunctionsModule`
 
@@ -438,34 +470,6 @@ The third line converts the original message to UPPERCASE.
 
 The last line returns something. All Cloud Functions must return something. This line uses `snap.ref` as the Firestore address of the document. It uses `set` with the `merge` parameter to add a field to an existing document. The new field is named `uppercase`. 
 
-## Run emulator
-
-Start the Firebase Emulator.
-
-```bash
-firebase emulators:start
-```
-
-You should see this with no error messages or warnings:
-
-```bash
-┌─────────────────────────────────────────────────────────────┐
-│ ✔  All emulators ready! It is now safe to connect your app. │
-│ i  View Emulator UI at http://127.0.0.1:4000/               │
-└─────────────────────────────────────────────────────────────┘
-
-┌───────────┬────────────────┬─────────────────────────────────┐
-│ Emulator  │ Host:Port      │ View in Emulator UI             │
-├───────────┼────────────────┼─────────────────────────────────┤
-│ Functions │ 127.0.0.1:5001 │ http://127.0.0.1:4000/functions │
-├───────────┼────────────────┼─────────────────────────────────┤
-│ Firestore │ 127.0.0.1:8080 │ http://127.0.0.1:4000/firestore │
-└───────────┴────────────────┴─────────────────────────────────┘
-  Emulator Hub running at 127.0.0.1:4400
-  Other reserved ports: 4500, 9150
-
-Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
-```
 
 ## Run your code
 
