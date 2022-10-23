@@ -43,7 +43,7 @@ npm install firebase
 ng add @angular/fire
 ```
 
-Deselect `ng deploy -- hosting` and select `Firestore`. (We won't use `Cloud Functions - callable` in this tutorial.)
+Select `ng deploy -- hosting`, `Firestore`, and `Cloud Functions (callable)`. (We won't use Hosting or callable Cloud Functions in this tutorial.)
 
 It will ask you for your email address associated with your Firebase account. Then it will ask you to associate a Firebase project. Select `[CREATE NEW PROJECT]`. It will then ask for a unique project ID. This must be 6-30 characters, no spaces, all lower case. Call it `triggerable-functions-project`. 
 
