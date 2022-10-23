@@ -62,9 +62,6 @@ UPDATE src/environments/environment.prod.ts (391 bytes)
 
 If you look in `app.module.ts` you'll see some new imported modules. In `environment.ts` you'll see your new Firebase credentials.
 
-## Create Firestore database
-Open your Firebase console and open your project. Click on `Cloud Firestore`, `Create database`, and `Start in test mode`.
-
 ## Install Firebase
 Open the official documentation for (Get started: write, test, and deploy your first functions)[https://firebase.google.com/docs/functions/get-started].
 
@@ -264,7 +261,7 @@ Initiate the emulators:
 firebase init emulators
 ```
 
-Select `Functions Emulator` and `Firestore Emulator`. Accept the default ports, but download the emulators.
+Select `Functions Emulator`, `Firestore Emulator`, and `Hosting Emulator`. (This tutorial won't use the Hosting Emulator.) Accept the default ports, but download the emulators.
 
 Run:
 
@@ -345,48 +342,7 @@ Open the [AngularFire documentation](https://github.com/angular/angularfire/blob
 
 Now we can start writing Angular. Open `/src/app/app.module.ts` and import modules.
 
-### AngularFire 6 vs 7
-
-Here we hit a stumbling block. The official AngularFire documentation shows how to use callable functions with AngularFire 6. AngularFire 7 seems to be available for functions but there's no documentation. I asked on Stack Overflow and no one answered my question.
-
-The problem is that you can't mix AngularFire 6 and 7. I use AngularFire 7 for Firestore and Auth. This means that I can't use callable functions with Firestore or Auth. The workaround is to trigger background functions instead of calling functions directly. We'll get to triggered background functions later. First this tutorial will teach callable functions, which you can't really use in a real Angular app now. I believe that we're very close to using AngularFire 7 with callable apps and only a few lines of code will need to change so let's learn to use callable functions with Angular 6.
-
-Import the emulator module as two lines and then make two providers lines for the emulators. These won't work because they're AngularFire 6.
-
-Import the Angular `FormsModule`.
-
-```ts
-import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-
-import { AppComponent } from './app.component';
-import { initializeApp,provideFirebaseApp } from '@angular/fire/app';
-import { environment } from '../environments/environment';
-import { provideFirestore,getFirestore } from '@angular/fire/firestore';
-
-import { USE_EMULATOR as USE_FIRESTORE_EMULATOR } from '@angular/fire/compat/functions';
-import { USE_EMULATOR as USE_FUNCTIONS_EMULATOR } from '@angular/fire/compat/functions';
-
-import { FormsModule } from '@angular/forms';
-
-@NgModule({
-  declarations: [
-    AppComponent
-  ],
-  imports: [
-    BrowserModule,
-    FormsModule,
-    provideFirebaseApp(() => initializeApp(environment.firebase)),
-    provideFirestore(() => getFirestore())
-  ],
-  providers: [
-    { provide: USE_FIRESTORE_EMULATOR, useValue: environment.useEmulators ? ['localhost', 8080] : undefined },
-    { provide: USE_FUNCTIONS_EMULATOR, useValue: environment.useEmulators ? ['localhost', 5001] : undefined }
-  ],
-  bootstrap: [AppComponent]
-})
-export class AppModule { }
-```
+Add Forms.
 
 ## Make the HTML view
 
