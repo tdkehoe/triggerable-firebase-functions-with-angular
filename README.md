@@ -16,7 +16,7 @@ Firebase Cloud Functions can be executed in three ways:
 
 I wrote a tutorial for [calling Cloud Functions from an Angular App](https://github.com/tdkehoe/Firebase-Cloud-Functions-with-Angular). Calling functions via HTTP requests is for Express apps, not Angular apps. This tutorial is about triggering Cloud Functions from Firestore. This tutorial is seperate from the callable functions tutorial because the latter uses AngularFire 6 when this tutorial uses AngularFire 7.
 
-## Create a new project
+## Install Angular
 
 In your terminal:
 
@@ -43,7 +43,7 @@ Open another tab in your terminal, check that you're in `TriggerableFunctionsTut
 npm install firebase
 npm install -g firebase-tools
 npm install firebase-admin@latest
-
+```
 
 Run `firebase login` to log in via the browser and authenticate the firebase tool:
 
