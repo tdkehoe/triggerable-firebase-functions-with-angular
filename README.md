@@ -209,7 +209,28 @@ Your `package.json` should now look like this (perhaps with newer version number
 
 ### Optional: configure `tsconfig.json`
 
-We won't be using TypeScript and so we won't use `tsconfig.json`. But if you want to get ready for using TypeScript in the future you can change `"module": "CommonJS",` to `"module": "ESNext",` and change `"target": "es2017"` to `"target": "ESNext"`. `ESNext` means "the latest version of JavaScript`.
+We won't be using TypeScript and so we won't use `tsconfig.json`. But if you want to get ready for using TypeScript in the future you can change `"module": "CommonJS",` to `"module": "ESNext",` add `"moduleResolution": "node",` and change `"target": "es2017"` to `"target": "ESNext"`. `ESNext` means "the latest version of JavaScript`.
+
+`tsconfig.json` now looks like this:
+
+```js
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "outDir": "lib",
+    "sourceMap": true,
+    "strict": true,
+    "target": "ESNext"
+  },
+  "compileOnSave": true,
+  "include": [
+    "src"
+  ]
+}
+```
 
 ## Write your Firebase Cloud Functions
 
@@ -438,6 +459,8 @@ Open your browser to `http://localhost:4200/` and you should see a form. Enter a
 
 In your Firestore database you should see your message.
 
+## Final thoughts on TypeScript
 
+My feeling is that TypeScript Cloud Functions could be used if `package.json` and `tsconfig.json` were configured correctly. Both default files are clearly misconfigured.
  
 
