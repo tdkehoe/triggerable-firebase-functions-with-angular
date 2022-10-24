@@ -17,17 +17,34 @@ Firebase Cloud Functions can be executed in three ways:
 I wrote a tutorial for [calling Cloud Functions from an Angular App](https://github.com/tdkehoe/Firebase-Cloud-Functions-with-Angular). Calling functions via HTTP requests is for Express apps, not Angular apps. This tutorial is about triggering Cloud Functions from Firestore. This tutorial is seperate from the callable functions tutorial because the latter uses AngularFire 6 when this tutorial uses AngularFire 7.
 
 
+## Make Angular app
+
+In your parent directory, spin up a new Angular app and call it `CloudFunctions`
+
+```
+npm install -g @angular/cli
+ng new CloudFunctions
+```
+
+Accept the defaults (no routing, CSS).
 
 ## Install Firebase
+
 Open the official documentation for (Get started: write, test, and deploy your first functions)[https://firebase.google.com/docs/functions/get-started].
 
-Open another tab in your terminal, check that you're in `TriggerableFunctionsTutorial`, and install AngularFire and Firebase from `npm`.
+Change directories into your Angular project directory. Install AngularFire and Firebase from `npm`.
 
 ```bash
-npm install firebase
+cd CloudFunctions
 npm install -g firebase-tools
-npm install firebase-admin@latest
+firebase init
 ```
+
+Select `Emulators`.
+
+Select `Create a new project`.
+
+Select `Functions Emulator` and `Firestore Emulator`.
 
 Run `firebase login` to log in via the browser and authenticate the firebase tool:
 
@@ -35,61 +52,59 @@ Run `firebase login` to log in via the browser and authenticate the firebase too
 firebase login
 ```
 
-Select `ng deploy -- hosting`, `Firestore`, and `Cloud Functions (callable)`. (We won't use Hosting or callable Cloud Functions in this tutorial.)
+### Emulators Setup
 
-It will ask you for your email address associated with your Firebase account. Then it will ask you to associate a Firebase project. Select `[CREATE NEW PROJECT]`. It will then ask for a unique project ID. This must be 6-30 characters, no spaces, all lower case. Call it `triggerable-functions-project`. 
+Select `Functions Emulator` and `Firestore Emulator`. Accept the default ports, but download the emulators.
 
-Then you'll be asked for project name. This can have spaces and upper case. Call it `Triggerable Functions Project`.
+### Functions Setup
 
-You'll also be asked to create a new app. Call it `triggerable-functions-app`.
+TypeScript is unusable for Firebase Cloud Functions because it can only handle CommonJS modules (`require`, `exports`) when JavaScript Cloud Functions can handle both  CommonJS and ES (`import`, `export`) modules.
 
-You should see:
+There are two types of npm packages. The older module standard is CommonJS, which are recognizable by the `require` and `exports` syntax. The newer standard is ES module, which uses `import` and `export` syntax. More and more npm packages are ES modules, i.e., you want to be able to use both types of modules. 
 
-```bash
-UPDATE .gitignore (602 bytes)
-UPDATE src/app/app.module.ts (627 bytes)
-UPDATE src/environments/environment.ts (998 bytes)
-UPDATE src/environments/environment.prod.ts (391 bytes)
-```
+The Firebase documentation on [handling dependencies](https://firebase.google.com/docs/functions/handle-dependencies) is incorrect.
 
-If you look in `app.module.ts` you'll see some new imported modules. In `environment.ts` you'll see your new Firebase credentials.
+> Use the Node.js `require()` function to load any Node.js module you have installed. 
+> You can also use the `require()` function to import local files you deploy alongside your function.
+>
+> If you are writing functions in TypeScript, use the `import` statement in the same way to load any Node.js module you have installed.
 
-### Initialize Firestore
-Initialize the Firestore database:
+`require()` will load only the older (often obselete or deprecated) CommonJS packages. Using `import` in a TypeScript Cloud Functions will throw an error `Cannot use import statement outside a module`, i.e., your Cloud Functions are not an ES module. For your Cloud Function to import ES module npm packages your Cloud Function must also be an ES module.
 
-```bash
-firebase init firestore
-```
+But maybe TypeScript Cloud Functions will work in a future Firebase update. Select `TypeScript` and we'll switch to using JavaScript below. We'll be able to switch back to TypeScript easily.
 
-Accept the default settings.
+Don't use ESLint. Install dependencies.
 
-You may need to add your project:
+**Start emulators**
+
+Start the Firestore and Functions Emulators.
 
 ```bash
-firebase use --add triggerable-functions-project
+firebase emulators:start
 ```
 
-### Install and initialize Functions
-
-Install `firebase-functions` locally in your project directory.
+You should see this, without errors:
 
 ```bash
-npm install firebase-functions@latest
+┌─────────────────────────────────────────────────────────────┐
+│ ✔  All emulators ready! It is now safe to connect your app. │
+│ i  View Emulator UI at http://127.0.0.1:4000/               │
+└─────────────────────────────────────────────────────────────┘
+
+┌───────────┬────────────────┬─────────────────────────────────┐
+│ Emulator  │ Host:Port      │ View in Emulator UI             │
+├───────────┼────────────────┼─────────────────────────────────┤
+│ Functions │ 127.0.0.1:5001 │ http://127.0.0.1:4000/functions │
+├───────────┼────────────────┼─────────────────────────────────┤
+│ Firestore │ 127.0.0.1:8080 │ http://127.0.0.1:4000/firestore │
+└───────────┴────────────────┴─────────────────────────────────┘
+  Emulator Hub running at 127.0.0.1:4400
+  Other reserved ports: 4500, 9150
+
+Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
 ```
 
-Initialize functions:
-
-```bash
-firebase init functions
-```
-
-You'll be asked to select `JavaScript` or `TypeScript`.
-
-Don't use ESLint. This will cancel deployment because of endless style issues. I use Visual Studio Code to catch syntax errors.
-
-Install the dependencies.
-
-You should now have a subdirectory `functions`. This subdirectory has its own `package.json`. 
+If you get an error `SyntaxError: Cannot use import statement outside a module` ignore this, we'll fix it below.
 
 ### Directory structure
 Look at your directory and you should see, if you chose TypeScript:
@@ -136,176 +151,33 @@ myproject
       +- package.json  # npm package file describing your Cloud Functions code
 ```
 
-## Initialize emulator
+## Emulator or cloud?
 
-Firebase comes with an emulator. The emulator will simulate many Firebase services, including Firestore, Auth, etc. I've never found a need for the emulator with Firestore and Auth as these execute quickly in the cloud. 
+Notice what we didn't do: we didn't connect to a Firestore database in the Firebase cloud. We'll do that later. First we'll develop our Cloud Functions using the Firebase Emulators, specifically the Firestore and Functions Emulators. (We won't use the other emulators such as Auth.) We use emulators for code development for a few reasons:
 
-Functions are different. Without the emulator developing code can be painfully slow. Deploying your code changes to the cloud takes about two minutes. Then I test my code changes and I have to wait for the console logs. This takes a few more minutes, with clicking various buttons in the console to get the logs to stream. I've seen a lag time between deploying functions to the cloud and the new version running so this can add a minute or two. All in all, waiting five minutes between writing new code and seeing the results feels painfully slow. With the emulator there's no waiting.
+Emulators are fast. The cycle of making a change in your Cloud Function, testing the Cloud Function, and viewing the results is about ten minutes in the cloud. It's about one minute in the emulators. Developing your code will be up to 10x faster.
 
-Another advantage of the emulator is that you screw up your code, such as writing an infinite loop, without affecting your Google Cloud Services bill. In other words, test your functions in the emulator before deploying them to the cloud.
+Emulators cost nothing. If you make an infinite loop in a Cloud Function in the Firebase cloud, you'll pay for the computer time. In the emulator there's no cost.
 
-Return to your project directory
+## Configure `package.json`
 
-```bash
-cd ..
-```
+Your `functions` directory has its own `package.json`, and the default configuration is incorrect. Open `functions/package.json`.
 
-Initiate the emulators:
+Add `"type": "module",` at the highest level. This enables you to use ES module npm packages.
 
-```bash
-firebase init emulators
-```
+Change `"main": "lib/index.js",` to `"main": "src/index.js",`. If you want to use TypeScript change this to `"main": "src/index.ts",`. I don't recommend using TypeScript in Cloud Functions.
 
-Select `Functions Emulator`, `Firestore Emulator`, and `Hosting Emulator`. (This tutorial won't use the Hosting Emulator.) Accept the default ports, but download the emulators.
-
-Run:
+In your terminal run
 
 ```bash
-npm run build
+npm install firebase-admin@latest
+npm install firebase-functions@latest
+npm install typescript@latest
 ```
 
-The latter command might ask you to update Java on your computer. 
+Notice that the version numbers change in your `package.json`.
 
-In `src/environments.ts` add a property `useEmulators`:
-
-```ts
-export const environment = {
-  firebase: {
-    projectId: '...,
-    appId: '...,
-    storageBucket: '...',
-    locationId: 'us-central',
-    apiKey: '...',
-    authDomain: '...',
-    messagingSenderId: '...',
-  },
-  production: false,
-  useEmulators: true
-};
-```
-
-Change `useEmulators` to `false` when you deploy to the cloud.
-
-## Run emulator
-
-Start the Firebase Emulator.
-
-```bash
-firebase emulators:start
-```
-
-You should see this with no error messages or warnings:
-
-```bash
-┌─────────────────────────────────────────────────────────────┐
-│ ✔  All emulators ready! It is now safe to connect your app. │
-│ i  View Emulator UI at http://127.0.0.1:4000/               │
-└─────────────────────────────────────────────────────────────┘
-
-┌───────────┬────────────────┬─────────────────────────────────┐
-│ Emulator  │ Host:Port      │ View in Emulator UI             │
-├───────────┼────────────────┼─────────────────────────────────┤
-│ Functions │ 127.0.0.1:5001 │ http://127.0.0.1:4000/functions │
-├───────────┼────────────────┼─────────────────────────────────┤
-│ Firestore │ 127.0.0.1:8080 │ http://127.0.0.1:4000/firestore │
-└───────────┴────────────────┴─────────────────────────────────┘
-  Emulator Hub running at 127.0.0.1:4400
-  Other reserved ports: 4500, 9150
-
-Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
-```
-
-## And here we throw an error
-
-
-
-
-
-
-
-
-## Install Angular
-
-In your terminal:
-
-```bash
-npm install -g @angular/cli
-ng new TriggerableFunctionsTutorial
-```
-
-The Angular CLI's `new` command will set up the latest Angular build in a new project structure. Accept the defaults (no routing, CSS). Start the server:
-
-```bash
-cd TriggerableFunctionsTutorial
-ng serve -o
-```
-
-Your browser should open to `localhost:4200`. You should see the Angular default homepage.
-
-## Install AngularFire
-
-```
-ng add @angular/fire
-```
-
-## Update dependencies
-
-In `functions/package.json` 
-
-```bash
-cd functions
-```
-
-update the dependencies.
-
-```bash
-npm install --save firebase-admin@latest
-npm install --save firebase-functions@latest
-```
-
-If you chose TypeScript:
-
-```bash
-npm install --save typescript@latest
-```
-
-Regularly run these commands in your `functions` directory to keep the npm modules up to date:
-
-```bash
-npm outdated
-npm update
-```
-
-Look up the lastest versions:
-[Firebase Admin](https://www.npmjs.com/package/firebase-admin)
-[Firebase Functions](https://www.npmjs.com/package/firebase-functions)
-[TypeScript](https://www.npmjs.com/package/typescript)
-
-### TypeScript
-
-Your `functions` subdirectory should also have its own `tsconfig.json`.
-
-Open `functions/package.json` and add:
-
-```js
-"type": "module",
-```
-
-Try removing this if you have get errors on deployment.
-
-Change:
-
-```js
-"main": "lib/index.js",
-```
-
-to
-
-```js
-"main": "src/index.ts",
-```
-
-Your `package.json` should now look like:
+Your `package.json` should now look like this (perhaps with newer version numbers):
 
 ```js
 {
@@ -323,7 +195,7 @@ Your `package.json` should now look like:
     "engines": {
         "node": "16"
     },
-    "main": "src/index.ts",
+    "main": "src/index.js",
     "dependencies": {
         "firebase-admin": "^11.2.0",
         "firebase-functions": "^4.0.1"
@@ -335,45 +207,87 @@ Your `package.json` should now look like:
 }
 ```
 
-In `tsconfig.json` add the properties `moduleResolution` and `noImplicitAny`:
+### Optional: configure `tsconfig.json`
 
-```js
-{
-  "compilerOptions": {
-    "module": "commonjs",
-    "moduleResolution": "Node",
-    "noImplicitReturns": true,
-    "noUnusedLocals": true,
-    "outDir": "lib",
-    "sourceMap": true,
-    "strict": true,
-    "noImplicitAny": false,
-    "target": "es2017"
-  },
-  "compileOnSave": true,
-  "include": [
-    "src"
-  ]
-}
+We won't be using TypeScript and so we won't use `tsconfig.json`. But if you want to get ready for using TypeScript in the future you can change `"module": "CommonJS",` to `"module": "ESNext",` and change `"target": "es2017"` to `"target": "ESNext"`. `ESNext` means "the latest version of JavaScript`.
+
+## Write your Firebase Cloud Functions
+
+If you chose TypeScript, rename `functions/src/index.ts` to `functions/src/index.js`. This will run your Cloud Functions as JavaScript.
+
+Your emulators should now run without the error `SyntaxError: Cannot use import statement outside a module`. That error means that your Cloud Functions weren't an ES module. Now they are.
+
+Open `functions/src/index.js` or `functions/index.js`. Import the `firebase-functions` module, then write a Cloud Function.
+
+```ts
+import * as functions from "firebase-functions";
+
+export const makeUppercase = functions.firestore.document('messages/{docId}').onCreate((snap, context) => {
+    const original = snap.data().original;
+    functions.logger.log('Uppercasing', context.params.docId, original);
+    const uppercase = original.toUpperCase();
+    return snap.ref.set({ uppercase }, { merge: true });
+});
 ```
 
-Even with all this reconfiguration when I deploy TypeScript cloud functions I get a pair of errors. If I set types, e.g., `data: any`, the transpiler throws this error:
+We import `firebase-functions`. It's a CommonJS module but `import` handles both CommonJS and ES modules, without changing syntax.
+
+The Cloud Function `makeUppercase` has six lines.
+
+The first line sets up a trigger from the collection `messages` and a wildcard for the `docId`. The trigger is on `onCreate()`, i.e., when a new document is created. The parameters are `data`, which is what was written to Firestore, and `context`, which is metadata including the `docId`.
+
+The second line stores the message written to Firestore in a local variable `original`.
+
+The third line is the same as `console.log`.
+
+The fourth line converts the original message to UPPERCASE.
+
+The fifth line returns something. All Cloud Functions must return something. This line uses `snap.ref` as the Firestore address of the document. It uses `set` with the `merge` parameter to add a field to an existing document. The new field is named `uppercase`. 
+
+## Run your Cloud Function
+
+In your browser, open a tab to http://127.0.0.1:4000/functions. You should see the `Firebase Emulator Suite`.
+
+Click on `Firestore`. Click `Start a collection`. Enter `messages` as the name of the collection. The `docId` will be automatically entered. In `Field` enter `original` and in `Value` enter `hello world`. Click `SAVE` and in few moments you should see a new field appear: `uppercase: HELLO WORLD`. Yay, your first Cloud Function is running!
+
+Click on the `Logs` tab. You should see something like this:
+
+```
+13:32:00 I function[us-central1-makeUppercase] Beginning execution of "makeUppercase"
+13:32:00 I function[us-central1-makeUppercase] {
+                                                "severity": "INFO",
+                                                "message": "Uppercasing Ay6qtx2DD8CaCniEME2I hello world"
+                                               }
+13:32:01 I function[us-central1-makeUppercase] Finished "makeUppercase" in 501.081045ms
+```
+
+## Deploy to the Firebase cloud
+
+In your Firebase console, add a new project. Give your project a Firestore database. Upgrade your project to the `Blaze` (paid) plan. (Cloud Functions aren't free.)
+
+Deploy your Cloud Function to Firebase:
 
 ```bash
-SyntaxError: Unexpected token ':'
+firebase deploy --only functions:uppercaseMe
+ ```
+
+You'll be promptesd to select your project.
+
+In your Cloud Firestore database, make a directory `messages` and a document. You should see the new field `uppercase` appear. You can read your cloud logs by clicking on `Functions` in your Firebase console.
+
+## Open Angular app
+
+Open your app.
+
+``bash
+ng serve -o
 ```
 
-Leaving out the type, e.g., `data`, the transpiler throws this error:
-
-```bash
-Function failed on loading user code. This is likely due to a bug in the user code.
-```
-
-
-
-## Setup `@NgModule` for the `AngularFireModule` and `AngularFireFunctionsModule`
+You should see the Angular default page.
 
 Open the [AngularFire documentation](https://github.com/angular/angularfire/blob/master/docs/functions/functions.md) for this section.
+
+
 
 Now we can start writing Angular. Open `/src/app/app.module.ts` and import modules.
 
@@ -446,32 +360,6 @@ We could unsubscribe the listener with
 this.unsubMessage$();
 ```
 
-## Write your Firebase Cloud Functions
-
-Open `functions/src/index.ts` or `functions/index.js`. Import two Firebase modules, initialize your app, and then write your callable functions.
-
-```ts
-const functions = require('firebase-functions');
-const admin = require('firebase-admin');
-admin.initializeApp();
-
-exports.uppercaseMe = functions.firestore.document('Triggers/{docId}').onCreate((snap, context) => {
-    var original = snap.data().message;
-    functions.logger.log('Uppercasing', context.params.docId, original);
-    var uppercase = original.toUpperCase();
-    return snap.ref.set({ uppercase }, { merge: true });
-});
-```
-
-This Cloud Function has four lines.
-
-The first line stores the message written to Firestore in a local variable `original`.
-
-The second line is the same as `console.log`.
-
-The third line converts the original message to UPPERCASE.
-
-The last line returns something. All Cloud Functions must return something. This line uses `snap.ref` as the Firestore address of the document. It uses `set` with the `merge` parameter to add a field to an existing document. The new field is named `uppercase`. 
 
 
 ## Run your code
@@ -486,15 +374,11 @@ Did your Cloud Function run?
 
 Open a browser tab to http://127.0.0.1:4000/functions. You should see your message in the logs. If not, your Cloud Function didn't run in the emulator.
 
-## Deploy to Firebase
 
-Deploy your Cloud Function to Firebase:
-
-```bash
-firebase deploy --only functions:uppercaseMe
- ```
  
- You may need to upgrade your project to the `Blaze` (paid) plan. Cloud Functions aren't free.
+ 
+ 
+ 
  
  In `src/environments.ts` change `useEmulators` to `false`:
  
@@ -505,3 +389,53 @@ firebase deploy --only functions:uppercaseMe
 Check the logs in your Firebase Console to see if your functions run.
 
 I find it takes five to ten minutes for a Cloud Function to deploy, then I test the Cloud Function, then I wait for the logs. Sometimes there's a lag time between deploying a Cloud Function and the new code running, i.e., the results I get back in the logs sometimes show the previous version of the code I deployed. It's best to wait a minute after deploying a function finishes and testing the function. This ten-minute wait is why the emulators should be used for development.
+
+
+
+
+
+Select `ng deploy -- hosting`, `Firestore`, and `Cloud Functions (callable)`. (We won't use Hosting or callable Cloud Functions in this tutorial.)
+
+It will ask you for your email address associated with your Firebase account. Then it will ask you to associate a Firebase project. Select `[CREATE NEW PROJECT]`. It will then ask for a unique project ID. This must be 6-30 characters, no spaces, all lower case. Call it `triggerable-functions-project`. 
+
+Then you'll be asked for project name. This can have spaces and upper case. Call it `Triggerable Functions Project`.
+
+You'll also be asked to create a new app. Call it `triggerable-functions-app`.
+
+You should see:
+
+```bash
+UPDATE .gitignore (602 bytes)
+UPDATE src/app/app.module.ts (627 bytes)
+UPDATE src/environments/environment.ts (998 bytes)
+UPDATE src/environments/environment.prod.ts (391 bytes)
+```
+
+If you look in `app.module.ts` you'll see some new imported modules. In `environment.ts` you'll see your new Firebase credentials.
+
+
+
+
+
+
+
+
+In `src/environments.ts` add a property `useEmulators`:
+
+```ts
+export const environment = {
+  firebase: {
+    projectId: '...,
+    appId: '...,
+    storageBucket: '...',
+    locationId: 'us-central',
+    apiKey: '...',
+    authDomain: '...',
+    messagingSenderId: '...',
+  },
+  production: false,
+  useEmulators: true
+};
+```
+
+Change `useEmulators` to `false` when you deploy to the cloud.
