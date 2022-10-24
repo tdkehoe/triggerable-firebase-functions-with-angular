@@ -220,15 +220,16 @@ We won't be using TypeScript and so we won't use `tsconfig.json`. But if you wan
     "moduleResolution": "node",
     "noImplicitReturns": true,
     "noUnusedLocals": true,
-    "outDir": "lib",
+    "outDir": "src",
     "sourceMap": true,
     "strict": true,
     "target": "ESNext"
   },
   "compileOnSave": true,
   "include": [
-    "src"
-  ]
+    "src/index.ts"
+  ],
+  "exclude": ["wwwroot"],
 }
 ```
 
