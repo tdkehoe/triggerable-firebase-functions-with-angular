@@ -279,19 +279,91 @@ In your Cloud Firestore database, make a directory `messages` and a document. Yo
 
 Open your app.
 
-``bash
+```bash
 ng serve -o
 ```
 
 You should see the Angular default page.
 
+## Add AngularFire
+
+Add AngularFire to your project.
+
+```bash
+ng add @angular/fire
+```
+
 Open the [AngularFire documentation](https://github.com/angular/angularfire/blob/master/docs/functions/functions.md) for this section.
 
+## `app.module.ts`
 
+Add `Forms` to `app.module.ts`:
 
-Now we can start writing Angular. Open `/src/app/app.module.ts` and import modules.
+```ts
+import { FormsModule } from '@angular/forms';
+...
+ imports: [
+    FormsModule,
+    ...
+    ]
+```
 
-Add Forms.
+Your `app.module.ts` should look like this:
+
+```js
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { AppComponent } from './app.component';
+import { environment } from '../environments/environment';
+
+import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
+import { provideFirestore, getFirestore } from '@angular/fire/firestore';
+import { provideFunctions, getFunctions } from '@angular/fire/functions';
+
+import { FormsModule } from '@angular/forms';
+
+@NgModule({
+  declarations: [
+    AppComponent
+  ],
+  imports: [
+    BrowserModule,
+    FormsModule,
+    provideFirebaseApp(() => initializeApp(environment.firebase)),
+    provideFirestore(() => getFirestore()),
+    provideFunctions(() => getFunctions()),
+    ],
+  providers: [],
+  bootstrap: [AppComponent]
+})
+export class AppModule { }
+```
+
+## Optional: `useEmulators`
+
+ In `src/environments.ts` add a property `useEmulators`:
+ 
+ ```js
+ useEmulators: false
+ ```
+ 
+ Your `environments.ts` should look like:
+ 
+ ```ts
+export const environment = {
+  firebase: {
+    projectId: '...,
+    appId: '...,
+    storageBucket: '...',
+    locationId: 'us-central',
+    apiKey: '...',
+    authDomain: '...',
+    messagingSenderId: '...',
+  },
+  production: false,
+  useEmulators: true
+};
+```
 
 ## Make the HTML view
 
@@ -334,15 +406,15 @@ export class AppComponent {
   async triggerMe() {
     try {
       // write to Firestore
-      const docRef = await addDoc(collection(this.firestore, 'Triggers'), {
+      const docRef = await addDoc(collection(this.firestore, 'messages'), {
         message: this.message,
       });
       this.message = null; // clear form fields
       // read from Firestore
-      this.docSnap = await getDoc(doc(this.firestore, 'Triggers', docRef.id));
+      this.docSnap = await getDoc(doc(this.firestore, 'messages', docRef.id));
       this.data$ = this.docSnap.data().message;
       // document listener
-      this.unsubMessage$ = onSnapshot(doc(this.firestore, 'Triggers', docRef.id), (snapshot: any) => {
+      this.unsubMessage$ = onSnapshot(doc(this.firestore, 'messages', docRef.id), (snapshot: any) => {
         this.upperca$e = snapshot.data().uppercase;
       });
     } catch (error) {
@@ -360,82 +432,12 @@ We could unsubscribe the listener with
 this.unsubMessage$();
 ```
 
-
-
 ## Run your code
 
 Open your browser to `http://localhost:4200/` and you should see a form. Enter a message and click the `Submit` button. You should see your message appear below the form.
 
 In your Firestore database you should see your message.
 
-## Check the functions logs
-
-Did your Cloud Function run?
-
-Open a browser tab to http://127.0.0.1:4000/functions. You should see your message in the logs. If not, your Cloud Function didn't run in the emulator.
-
 
  
- 
- 
- 
- 
- In `src/environments.ts` change `useEmulators` to `false`:
- 
- ```js
- useEmulators: false
- ```
- 
-Check the logs in your Firebase Console to see if your functions run.
 
-I find it takes five to ten minutes for a Cloud Function to deploy, then I test the Cloud Function, then I wait for the logs. Sometimes there's a lag time between deploying a Cloud Function and the new code running, i.e., the results I get back in the logs sometimes show the previous version of the code I deployed. It's best to wait a minute after deploying a function finishes and testing the function. This ten-minute wait is why the emulators should be used for development.
-
-
-
-
-
-Select `ng deploy -- hosting`, `Firestore`, and `Cloud Functions (callable)`. (We won't use Hosting or callable Cloud Functions in this tutorial.)
-
-It will ask you for your email address associated with your Firebase account. Then it will ask you to associate a Firebase project. Select `[CREATE NEW PROJECT]`. It will then ask for a unique project ID. This must be 6-30 characters, no spaces, all lower case. Call it `triggerable-functions-project`. 
-
-Then you'll be asked for project name. This can have spaces and upper case. Call it `Triggerable Functions Project`.
-
-You'll also be asked to create a new app. Call it `triggerable-functions-app`.
-
-You should see:
-
-```bash
-UPDATE .gitignore (602 bytes)
-UPDATE src/app/app.module.ts (627 bytes)
-UPDATE src/environments/environment.ts (998 bytes)
-UPDATE src/environments/environment.prod.ts (391 bytes)
-```
-
-If you look in `app.module.ts` you'll see some new imported modules. In `environment.ts` you'll see your new Firebase credentials.
-
-
-
-
-
-
-
-
-In `src/environments.ts` add a property `useEmulators`:
-
-```ts
-export const environment = {
-  firebase: {
-    projectId: '...,
-    appId: '...,
-    storageBucket: '...',
-    locationId: 'us-central',
-    apiKey: '...',
-    authDomain: '...',
-    messagingSenderId: '...',
-  },
-  production: false,
-  useEmulators: true
-};
-```
-
-Change `useEmulators` to `false` when you deploy to the cloud.
