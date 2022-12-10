@@ -238,11 +238,11 @@ We won't be using TypeScript and so we won't use `tsconfig.json`. But if you wan
 }
 ```
 
-## Write your Firebase Cloud Functions
+## Write a Triggerable Firebase Cloud Function
 
 If you chose TypeScript, rename `functions/src/index.ts` to `functions/src/index.js`. This will run your Cloud Functions as JavaScript.
 
-Your emulators should now run without the error `SyntaxError: Cannot use import statement outside a module`. That error means that your Cloud Functions weren't an ES module. Now they are.
+Your emulators should now run without the error `SyntaxError: Cannot use import statement outside a module`. Your Cloud Functions are now in an ES module.
 
 Open `functions/src/index.js` or `functions/index.js`. Import the `firebase-functions` module, then write a Cloud Function.
 
@@ -257,7 +257,13 @@ export const makeUppercase = functions.firestore.document('messages/{docId}').on
 });
 ```
 
-We import `firebase-functions`. It's a CommonJS module but `import` handles both CommonJS and ES modules, without changing syntax.
+We import `firebase-functions`. It's a CommonJS module but `import` handles both CommonJS and ES modules, without changing syntax.  This won't work:
+
+```
+import { getFunctions } from 'firebase/functions';
+```
+
+You can't import individual methods as needed from the `firebase/functions` module because it's a CommonJS module, not an ES module. Most Firebase modules are ES modules, allowing you to import only the functions you need.
 
 The Cloud Function `makeUppercase` has six lines.
 
@@ -288,6 +294,69 @@ Click on the `Logs` tab. You should see something like this:
 13:32:01 I function[us-central1-makeUppercase] Finished "makeUppercase" in 501.081045ms
 ```
 
+## Write a Callable Firebase Cloud Function
+
+Let's make a callable cloud function.
+
+*index.js*
+```js
+export const addMessage = functions.https.onCall((data, context) => {
+  try {
+    const original = data.text;
+    const uppercase = original.toUpperCase();
+    return uppercase;
+  } catch (error) {
+    console.error(error);
+  }
+});
+```
+
+In app.component.html make a form.
+
+```html
+<h3>Call cloud function</h3>
+<form (ngSubmit)="callMe(messageText)">
+    <input type="text" [(ngModel)]="messageText" name="message" placeholder="message" required>
+    <button type="submit" value="Submit">Submit</button>
+</form>
+```
+
+In app.component.ts set up config and initialization boilerplate, then write the handler function.
+
+```js
+import { Component } from '@angular/core';
+import { getFunctions, httpsCallable, httpsCallableFromURL } from "firebase/functions";
+import { initializeApp } from 'firebase/app';
+import { getFirestore, setDoc, doc } from "firebase/firestore";
+import { environment } from '../environments/environment';
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.css']
+})
+export class AppComponent {
+  firebaseConfig = environment.firebaseConfig;
+  firebaseApp = initializeApp(this.firebaseConfig);
+  db = getFirestore(this.firebaseApp);
+
+  messageText: string | null = null;
+  functions = getFunctions(this.firebaseApp);
+
+  callMe(messageText: string | null) {
+    console.log("Calling Cloud Function: " + messageText);
+    // const addMessage = httpsCallable(this.functions, 'addMessage'); // throws CORS error
+    const addMessage = httpsCallableFromURL(this.functions, 'http://localhost:5001/triggerable-functions-project/us-central1/addMessage');
+    addMessage({ text: messageText })
+      .then((result) => {
+        console.log(result.data)
+      });
+  };
+}
+```
+
+The documentation says to use `httpsCallable`. You can try this, I get a CORS error. Instead I use `httpsCallableFromURL`. The function then only accepts calls from the specified URL. The URL has the location of the Angular server, the project ID, the location of the Firebase server, and the name of the function.
+
 ## Deploy to the Firebase cloud
 
 In your Firebase console, add a new project. Give your project a Firestore database. Upgrade your project to the `Blaze` (paid) plan. (Cloud Functions aren't free.)
@@ -298,7 +367,7 @@ Deploy your Cloud Function to Firebase:
 firebase deploy --only functions:uppercaseMe
  ```
 
-You'll be promptesd to select your project.
+You'll be prompted to select your project.
 
 In your Cloud Firestore database, make a directory `messages` and a document. You should see the new field `uppercase` appear. You can read your cloud logs by clicking on `Functions` in your Firebase console.
 
@@ -465,8 +534,5 @@ Open your browser to `http://localhost:4200/` and you should see a form. Enter a
 
 In your Firestore database you should see your message.
 
-## Final thoughts on TypeScript
-
-My feeling is that TypeScript Cloud Functions could be used if `package.json` and `tsconfig.json` were configured correctly. Both default files are clearly misconfigured.
  
 
