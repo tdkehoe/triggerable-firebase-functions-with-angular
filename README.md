@@ -1,12 +1,12 @@
-# Using Firebase Triggerable Cloud Functions with Angular and AngularFire
+# Using Firebase Cloud Functions with Angular
 
-This tutorial will make a simple Angular app that triggers Firebase Cloud Functions by writing to Firestore.
+This tutorial will make a simple Angular app that calls Firebase Cloud Functions directly and triggers Firebase Cloud Functions by writing to Firestore.
 
-This project uses Angular 14, AngularFire 7, and Firestore Web version 9 (modular).
+This project uses Angular 15, AngularFire 7, and Firestore Web version 9 (modular).
 
 I assume that you know the basics of Angular (nothing advanced is required). No CSS or other styling is used, to make the code easier to understand.
 
-### Triggerable vs. callable Cloud Functions
+## Callable vs Triggerable Cloud Functions
 
 Firebase Cloud Functions can be executed in three ways:
 
