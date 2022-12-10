@@ -14,8 +14,8 @@ Firebase Cloud Functions can be executed in three ways:
 * Call functions via HTTP request, which is good for Express apps
 * Trigger from a write to Firestore (other Firebase products such as Storage are in beta)
 
-I wrote a tutorial for [calling Cloud Functions from an Angular App](https://github.com/tdkehoe/Firebase-Cloud-Functions-with-Angular). Calling functions via HTTP requests is for Express apps, not Angular apps. This tutorial is about triggering Cloud Functions from Firestore. This tutorial is seperate from the callable functions tutorial because the latter uses AngularFire 6 when this tutorial uses AngularFire 7.
-
+### What about AngularFire?
+AngularFire 6 handles Callable Cloud Functions. AngularFire 7 doesn't and you don't need it. Don't try to use the AngularFire 6. It uses Firebase 8, not Firebase 9, and it only works with TypeScript 4.7.2. I wrote a tutorial for [AngularFire 6 with Cloud Functions](https://github.com/tdkehoe/Firebase-Cloud-Functions-with-Angular). 
 
 ## Make Angular app
 
@@ -52,30 +52,35 @@ Run `firebase login` to log in via the browser and authenticate the firebase too
 firebase login
 ```
 
-### Emulators Setup
+## Emulators Setup
 
 Select `Functions Emulator` and `Firestore Emulator`. Accept the default ports, but download the emulators.
 
-### Functions Setup
+## Functions Setup: TypeScript or JavaScript? CommonJS or ES Modules?
 
-TypeScript is unusable for Firebase Cloud Functions because it can only handle CommonJS modules (`require`, `exports`) when JavaScript Cloud Functions can handle both  CommonJS and ES (`import`, `export`) modules.
+I initialize my Firebase Functions directories for TypseScript. However, I can't get Firebase Functions to work with TypeScript so I use JavaScript. I presume that a future version will work with TypeScript.
 
-There are two types of npm packages. The older module standard is CommonJS, which are recognizable by the `require` and `exports` syntax. The newer standard is ES module, which uses `import` and `export` syntax. More and more npm packages are ES modules, i.e., you want to be able to use both types of modules. 
+### What goes wrong with TypeScript?
 
-The Firebase documentation on [handling dependencies](https://firebase.google.com/docs/functions/handle-dependencies) is incorrect.
+With `index.ts` the emulator throws this error:
 
-> Use the Node.js `require()` function to load any Node.js module you have installed. 
-> You can also use the `require()` function to import local files you deploy alongside your function.
->
-> If you are writing functions in TypeScript, use the `import` statement in the same way to load any Node.js module you have installed.
+```
+SyntaxError: Cannot use import statement outside a module
+```
 
-`require()` will load only the older (often obselete or deprecated) CommonJS packages. Using `import` in a TypeScript Cloud Functions will throw an error `Cannot use import statement outside a module`, i.e., your Cloud Functions are not an ES module. For your Cloud Function to import ES module npm packages your Cloud Function must also be an ES module.
+This means that the compiler doesn't recognize that your `index.ts` file is an ES module. Supposedly this can be fixed by adding `"type": "module",` to your `functions/package.json` but that doesn't fix the error for me.
+
+There are two types of modules (including npm packages). The older CommonJS modules use the keywords `require` and `exports`. Newer ES modules use the keywords `import` and `export`. ES modules can import CommonJS modules; CommonJS modules can't import ES modules.
 
 But maybe TypeScript Cloud Functions will work in a future Firebase update. Select `TypeScript` and we'll switch to using JavaScript below. We'll be able to switch back to TypeScript easily.
 
-Don't use ESLint. Install dependencies.
+### ESLint, installing dependencies
 
-**Start emulators**
+Don't use ESLint. Visual Studio Code will lint your code as you type. ESLint will lint your code at compile time, i.e., after you've made lots of typos.
+
+Install dependencies.
+
+## Start emulators
 
 Start the Firestore and Functions Emulators.
 
@@ -163,7 +168,7 @@ Emulators cost nothing. If you make an infinite loop in a Cloud Function in the 
 
 Your `functions` directory has its own `package.json`, and the default configuration is incorrect. Open `functions/package.json`.
 
-Add `"type": "module",` at the highest level. This enables you to use ES module npm packages.
+Add `"type": "module",` at the highest level. This enables you to use ES module npm packages, in theory at least.
 
 Change `"main": "lib/index.js",` to `"main": "src/index.js",`. If you want to use TypeScript change this to `"main": "src/index.ts",`. I don't recommend using TypeScript in Cloud Functions.
 
@@ -198,10 +203,10 @@ Your `package.json` should now look like this (perhaps with newer version number
     "main": "src/index.js",
     "dependencies": {
         "firebase-admin": "^11.2.0",
-        "firebase-functions": "^4.0.1"
+        "firebase-functions": "^4.0.2"
     },
     "devDependencies": {
-        "typescript": "^4.8.4"
+        "typescript": "^4.9.4"
     },
     "private": true
 }
