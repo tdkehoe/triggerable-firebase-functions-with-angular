@@ -238,7 +238,7 @@ We won't be using TypeScript and so we won't use `tsconfig.json`. But if you wan
 }
 ```
 
-## Write a Triggerable Firebase Cloud Function
+# Write a Triggerable Firebase Cloud Function
 
 If you chose TypeScript, rename `functions/src/index.ts` to `functions/src/index.js`. This will run your Cloud Functions as JavaScript.
 
@@ -277,7 +277,7 @@ The fourth line converts the original message to UPPERCASE.
 
 The fifth line returns something. All Cloud Functions must return something. This line uses `snap.ref` as the Firestore address of the document. It uses `set` with the `merge` parameter to add a field to an existing document. The new field is named `uppercase`. 
 
-## Run your Cloud Function
+## Run your Triggerable Cloud Function
 
 In your browser, open a tab to http://127.0.0.1:4000/functions. You should see the `Firebase Emulator Suite`.
 
@@ -294,7 +294,28 @@ Click on the `Logs` tab. You should see something like this:
 13:32:01 I function[us-central1-makeUppercase] Finished "makeUppercase" in 501.081045ms
 ```
 
-## Write a Callable Firebase Cloud Function
+## Connect Your Triggerable Firebase Cloud Function to Angular
+
+Put a form and `Submit` button in your HTML view.
+
+*app.component.html*
+```
+<h3>Trigger Firebase Cloud Function</h3>
+<form (ngSubmit)="triggerMe(triggerText)">
+    <input type="text" [(ngModel)]="triggerText" name="message" placeholder="message" required>
+    <button type="submit" value="Submit">Submit</button>
+</form>
+```
+
+Add the handler function in the controller.
+
+*app.component.ts*
+```
+
+```
+
+
+# Write a Callable Firebase Cloud Function
 
 Let's make a callable cloud function.
 
