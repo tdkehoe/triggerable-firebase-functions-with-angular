@@ -120,6 +120,8 @@ You may prefer to run `npm run build` without restarting the emulator. Or if you
 "serve": "npm run build && firebase emulators:start",
 ```
 
+When you make changes in your Angular controller you don't need to run `npm run serve` or restart the emulator. When you make changes in your function you need to do both.
+
 ## Start emulators
 
 Start the Firestore and Functions Emulators.
