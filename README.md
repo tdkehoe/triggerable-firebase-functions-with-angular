@@ -269,12 +269,21 @@ export class AppComponent {
     addMessage({ text: messageText })
       .then((result) => {
         console.log(result.data)
-      });
+      })
+      .catch((error) => {
+        console.error(error);
+      });;
   };
 }
 ```
 
-The documentation says to use `httpsCallable`. You can try this, I get a CORS error. Instead I use `httpsCallableFromURL`. The function then only accepts calls from the specified URL. The URL has the location of the Angular server, the project ID, the location of the Firebase server, and the name of the function.
+The documentation says to use `httpsCallable`. You can try this, I get a CORS error. Instead I use `httpsCallableFromURL`. The function then only accepts calls from the specified URL. 
+
+### The URL in httpsCallableFromURL
+
+You'll need different URLs for the emulator and the cloud. The above function shows the emulator URL. The URL has the port of the Functions emulator server, the project ID, the region of the Firebase server, and the name of the function. Look at your `firebaseConfig` in Project Settings in your Firebase console to get the name of the project and the region.
+
+For your cloud URL, deploy your function then look in your Firebase console. Find your callable function is your list of deployed functions. The URL will be displayed there.
 
 ## Deploy to the Firebase cloud
 
