@@ -299,6 +299,8 @@ You'll be prompted to select your project.
 
 In your Cloud Firestore database, make a directory `messages` and a document. You should see the new field `uppercase` appear. You can read your cloud logs by clicking on `Functions` in your Firebase console.
 
+******************************the rest of old, delete?
+
 ## Open Angular app
 
 Open your app.
