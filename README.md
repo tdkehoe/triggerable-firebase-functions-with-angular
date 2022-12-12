@@ -306,6 +306,8 @@ You'll need different URLs for the emulator and the cloud. The above function sh
 
 For your cloud URL, deploy your function then look in your Firebase console. Find your callable function is your list of deployed functions. The URL will be displayed there.
 
+During development you'll want to have both URLs in your Angular controller so you can switch between running in the emulator and the cloud.
+
 ## Deploy to the Firebase cloud
 
 In your Firebase console, add a new project. Give your project a Firestore database. Upgrade your project to the `Blaze` (paid) plan. (Cloud Functions aren't free.)
