@@ -99,6 +99,27 @@ Open `lib/index.js` and you'll see the default Cloud Functions transpiled as Jav
 
 Remember to run `npm run serve` each time you update a Cloud Function. There may be a way to "hot reload" this process when you save changes.
 
+### Optional: configure package.json scripts
+
+If you open `functions/package.json` you'll see a script:
+
+```js
+"serve": "npm run build && firebase emulators:start --only functions",
+```
+
+When you run `npm run serve` it runs two commands:
+
+```
+npm run build
+firebase emulators:start --only functions
+```
+
+You may prefer to run `npm run build` without restarting the emulator. Or if you want to use the Firestore emulator with the Functions emulator, change the script to
+
+```js
+"serve": "npm run build && firebase emulators:start",
+```
+
 ## Start emulators
 
 Start the Firestore and Functions Emulators.
