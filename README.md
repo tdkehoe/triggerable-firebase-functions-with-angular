@@ -324,6 +324,50 @@ You'll be prompted to select your project.
 
 In your Cloud Firestore database, make a directory `messages` and a document. You should see the new field `uppercase` appear. You can read your cloud logs by clicking on `Functions` in your Firebase console.
 
+### Use TypeScript modules (optiomal)
+
+Long Cloud Functions are easier to write and maintain if you put parts into modules outside `index.ts`.
+
+To make a function module, export the function, then export it again:
+
+*functionModule.ts*
+```js
+export function myFunction() {
+  ... do stuff in the function
+  return something;
+};
+
+export default function () { myFunction }
+```
+
+Import your function into `index.ts`:
+
+*index.ts*
+```
+import { myFunction } from './myFunction';
+const functionResults = myFunction();
+```
+
+You can now use `functionResults` in your code.
+
+To make an array module, make an array, then export it:
+
+*myArray.ts*
+```
+const myArray:string[] = ['the', 'of', 'and', 'to', 'a', 'in', 'for'];
+export default myArray;
+```
+
+Import your array into `index.ts`:
+
+*index.ts*
+```
+import myArray from './myArray';
+```
+
+You can now use `myArray` in your code.
+
+
 # The rest is old, delete? *******************************
 
 ## Open Angular app
