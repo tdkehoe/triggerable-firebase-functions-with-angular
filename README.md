@@ -40,7 +40,7 @@ npm install -g firebase-tools
 firebase init
 ```
 
-Select `Emulators`.
+Select `Firestore`, `Functions`,  `Emulators`. Consider selecting `Storage`.
 
 Select `Create a new project`.
 
