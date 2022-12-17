@@ -17,6 +17,41 @@ Firebase Cloud Functions can be executed in three ways:
 ### What about AngularFire?
 AngularFire 6 handles Callable Cloud Functions. AngularFire 7 doesn't and you don't need it. Don't try to use the AngularFire 6. It uses Firebase 8, not Firebase 9, and it only works with TypeScript 4.7.2. I wrote a tutorial for [AngularFire 6 with Cloud Functions](https://github.com/tdkehoe/Firebase-Cloud-Functions-with-Angular). 
 
+## tl;dr: The fast way to make a Firebase Functions directory
+
+In your GitHub Desktop app, make a new local repository and a matching remote repository. The local repository will be your project folder.
+
+In your project folder install Firebase:
+
+```
+npm install -g firebase-tools
+npm install firebase
+npm install firebase-functions
+npm install firebase-admin
+firebase login
+firebase init
+```
+
+Select `Firestore`, `Functions`,  `Emulators` and maybe `Storage`. Follow the prompts. Select `TypeScript`.
+
+Install other npm packages:
+
+```
+npm install got
+npm install @google-cloud/translate
+```
+
+In `src/index.ts` comment out the sample function.
+
+In your `functions` folder run
+
+```
+npm run build
+```
+
+Check your directory structure.
+
+
 ## Make Angular app
 
 In your parent directory, spin up a new Angular app and call it `CloudFunctions`
