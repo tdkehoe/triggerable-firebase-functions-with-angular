@@ -34,6 +34,8 @@ firebase init
 
 Select `Firestore`, `Functions`,  `Emulators` and maybe `Storage`. Follow the prompts. Select `TypeScript`.
 
+In `package.json`, update `firebase-admin`, `firebase-functions`, and `typescript`.
+
 Install other npm packages:
 
 ```
