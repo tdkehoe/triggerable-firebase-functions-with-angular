@@ -198,11 +198,48 @@ Emulators cost nothing. If you make an infinite loop in a Cloud Function in the 
 
 # Write a Triggerable Firebase Cloud Function
 
-If you chose TypeScript, rename `functions/src/index.ts` to `functions/src/index.js`. This will run your Cloud Functions as JavaScript.
+Finally! It's time to write your first Cloud Function!
 
-Your emulators should now run without the error `SyntaxError: Cannot use import statement outside a module`. Your Cloud Functions are now in an ES module.
+## Cloud Functions syntax
 
-Open `functions/src/index.js` or `functions/index.js`. Import the `firebase-functions` module, then write a Cloud Function.
+Cloud Functions use a different syntax than web applications. Little of this is in the documentation.
+
+You can't use `setDoc` or `updateDoc` with Firestore or `uploadString` or `uploadBytes` with Storage. If you use this syntax and run `npm run build` the transpiler will make three new directories and four new files, in this structure:
+
+```
+myproject
+├── environments
+│   └── environment.ts
+├── functions
+│   ├── lib
+│   │   ├── environments
+│   │   │   ├── environment.js
+│   │   │   └── environment.js.map
+│   │   ├── functions
+│   │   │   └── src
+│   │   │       ├── index.js
+│   │   │       ├── index.js.map
+│   │   ├── index.js
+│   │   ├── index.js.map
+│   ├── node_modules
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── src
+│   │   ├── index.ts
+│   └── tsconfig.json
+```
+
+
+
+
+## `SyntaxError: Cannot use import statement outside a module`
+
+This error means that you failed to transpile your TypeScript into JavaScript. This is done with the command `npm run build` run from the `functions` directory.
+
+
+
+
+Open `functions/src/index.ts` or `functions/index.js`. Import the `firebase-functions` module, then write a Cloud Function.
 
 ```ts
 import * as functions from "firebase-functions";
